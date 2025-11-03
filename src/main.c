@@ -2,27 +2,34 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
+#include <string.h>
+#include <stdbool.h>
 
 #include "gui.h"
 #include "rom.h"
 #include "cpu.h"
+#include "debug.h"
 
 int main(int argc, char *argv[])
 {
-  if (argc != 2) {
-    printf("Verwendung: %s <Pfad zur .gb Datei>\n", argv[0]);
+  bool debug = false;
+
+  if (argc < 2) {
+    printf("Usage: %s <Path to .gb File> [-d DEBUG]\n", argv[0]);
     return 1;
+  }
+  if (argc == 3) {
+    if (strcmp(argv[2], "-d") == 0 || strcmp(argv[2], "--debug") == 0) {
+      printDebug("DEBUG MODE ON!", "");
+      debug = true;
+    }
   }
 
   FILE *file = fopen(argv[1], "rb");
   if (!file) {
-    perror("Konnte die ROM-Datei nicht öffnen");
+    perror("Couldn't load ROM File");
     return 1;
   }
-
-  //srand((unsigned) time(NULL));
-  //float dt;
 
   unsigned char* rom = ReadFile(file);
 
@@ -42,8 +49,9 @@ int main(int argc, char *argv[])
   cpu.PC = 0;
   cpu.SP = 0;
 
-  Run(rom, cpu);
+  Run(rom, cpu, debug);
   CloseAudioDevice();
   CloseWindow();
+
   return 0;
 }
