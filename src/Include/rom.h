@@ -1,13 +1,17 @@
 #ifndef _ROM_H
 #define _ROM_H
 
-#define ROM_SIZE 248000
+#define ROM_SIZE 4194304
 
 #include <stdio.h>
 #include <stdint.h>
 
-extern uint8_t rom[ROM_SIZE];
+extern unsigned char *rom;
+extern long size;
 
-void ReadFile(FILE *file);
+//extern uint8_t rom;
+//extern size_t bytes_read;
+
+unsigned char* ReadFile(FILE *file);
 
 #endif

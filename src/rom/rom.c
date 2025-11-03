@@ -1,11 +1,37 @@
-#include "rom.h"
+#include <rom.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 
-void ReadFile(FILE *file)
+unsigned char* ReadFile(FILE *file)
 {
-  uint8_t rom[ROM_SIZE];
+  FILE *out = fopen("output.txt", "w");
+
+  fseek(file, 0, SEEK_END);
+  long size = ftell(file);
+  fseek(file, 0, SEEK_SET);
+
+  unsigned char *rom = (unsigned char*) malloc(size);
+  if (rom == NULL) {
+    printf("ERROR\n");
+    exit(1);
+  }
+
+  fread(rom, 1, size, file);
+
+  for (long i = 0; i < size; i++) {
+    fprintf(out, "%02X | ", rom[i]);
+    if ((i + 1) % 16 == 0)
+      fprintf(out, "   %d\n", i);
+  }
+
+  fclose(out);
+  fclose(file);
+
+  return rom;
+
+
+  /*uint8_t rom[ROM_SIZE];
   size_t bytes_read = fread(rom, 1, ROM_SIZE, file);
 
   FILE *out = fopen("output.txt", "w");
@@ -20,5 +46,5 @@ void ReadFile(FILE *file)
     }
   }
 
-  fclose(out);
+  fclose(out);*/
 }

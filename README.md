@@ -28,3 +28,10 @@ oder
 ## Wie kann ich es ausführen
 
 `./build/Debug/GB` + eine .gb Datei
+
+## Wichtig
+
+[Eine große Hilfe](https://gbdev.io/pandocs/)
+[Eine noch größere Hilfe](https://izik1.github.io/gbops/)
+[Auch ganz wichtig](https://rgbds.gbdev.io/docs/v1.0.0/gbz80.7)
+[Die Engine](https://www.raylib.com)

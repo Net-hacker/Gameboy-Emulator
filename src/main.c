@@ -6,6 +6,7 @@
 
 #include "gui.h"
 #include "rom.h"
+#include "cpu.h"
 
 int main(int argc, char *argv[])
 {
@@ -20,14 +21,28 @@ int main(int argc, char *argv[])
     return 1;
   }
 
-  srand((unsigned) time(NULL));
-  float dt;
+  //srand((unsigned) time(NULL));
+  //float dt;
+
+  unsigned char* rom = ReadFile(file);
 
   StartInstance();
 
-  ReadFile(file);
+  CPU cpu;
+  cpu.A = 0;
+  cpu.B = 0;
+  cpu.C = 0;
+  cpu.D = 0;
+  cpu.E = 0;
+  cpu.H = 0;
+  cpu.L = 0;
+  cpu.BC = 0;
+  cpu.DE = 0;
+  cpu.HL = 0;
+  cpu.PC = 0;
+  cpu.SP = 0;
 
-  fclose(file);
+  Run(rom, cpu);
   CloseAudioDevice();
   CloseWindow();
   return 0;
