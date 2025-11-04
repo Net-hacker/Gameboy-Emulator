@@ -1,4 +1,4 @@
-# Gameboy-Emulator
+# Gameboy-Emulator - NO GUI
 Ein von mir in C programmierter Gameboy-Emulator basierend auf Raylib
 
 ## Was muss noch getan werden?
@@ -20,10 +20,7 @@ oder
 ## Und dann?
 
 ### gcc
-`make_debug_gcc`
-
-### clang
-`make_debug_clang`
+`make make_without_gui
 
 ## Wie kann ich es ausführen
 

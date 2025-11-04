@@ -1,11 +1,8 @@
-#include "raylib.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
-#include "gui.h"
 #include "rom.h"
 #include "cpu.h"
 #include "debug.h"
@@ -33,8 +30,6 @@ int main(int argc, char *argv[])
 
   unsigned char* rom = ReadFile(file);
 
-  StartInstance();
-
   CPU cpu;
   cpu.A = 0;
   cpu.B = 0;
@@ -50,8 +45,6 @@ int main(int argc, char *argv[])
   cpu.SP = 0;
 
   Run(rom, cpu, debug);
-  CloseAudioDevice();
-  CloseWindow();
 
   return 0;
 }

@@ -1,8 +1,5 @@
 #include <cpu.h>
 #include <debug.h>
-#include <memory.h>
-
-#include "raylib.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -81,7 +78,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug)
 {
   uint8_t opcode = rom[cpu.PC];
 
-  while (!WindowShouldClose() && cpu.PC <= 20) {
+  while (cpu.PC <= 20) {
     printf("%02X\n", rom[cpu.PC]);
     switch (opcode) {
       case 0x00:
@@ -103,6 +100,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug)
         BC++;
         cpu.B = (BC >> 8) & 0xFF;
         cpu.C = BC & 0xFF;
+	printDebug("INC BC", "");
         break;
       }
 
