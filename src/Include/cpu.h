@@ -3,12 +3,16 @@
 
 #define MEM_SIZE 0x10000
 
+#define FLAG_C 0x10
+#define FLAG_H 0x20
+#define FLAG_N 0x40
+#define FLAG_Z 0x80
+
 #include <stdint.h>
 #include <stdbool.h>
 
 typedef struct {
-  uint8_t A, B, C, D, E, H, L;
-  uint8_t F;
+  uint8_t A, B, C, D, E, H, L, Flag;
   uint16_t BC, DE, HL, PC, SP;
   uint8_t memory[MEM_SIZE];
 } CPU;

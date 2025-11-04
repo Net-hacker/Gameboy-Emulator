@@ -1,15 +1,13 @@
 # Gameboy-Emulator - NO GUI
-Ein von mir in C programmierter Gameboy-Emulator basierend auf Raylib
+Ein von mir in C programmierter Gameboy-Emulator
 
 ## Was muss noch getan werden?
 - CPU
 - Interpretieren
-- Graphics
-- Sound
 - File Check
 
 ## Was funktioniert schon?
-- Bootscreen
+- Noch nichts vollständig ohne GUI
 
 ## Was brauche ich zum kompilieren
 Entweder
@@ -19,12 +17,23 @@ oder
 
 ## Und dann?
 
-### gcc
-`make make_without_gui
+### Debug
+
+#### gcc
+`make make_gcc_debug`
+#### clang
+`make make_clang_debug`
+
+### Release
+
+#### gcc
+`make make_gcc_release`
+#### clang
+`make make_clang_release`
 
 ## Wie kann ich es ausführen
 
-`./build/Debug/GB` + eine .gb Datei
+`./build/`Debug / Release`/GB + eine .gb Datei`
 
 ## Wichtig
 
