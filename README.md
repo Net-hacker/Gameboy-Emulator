@@ -19,15 +19,29 @@ oder
 
 ## Und dann?
 
-### gcc
-`make_debug_gcc`
+### Debug
 
-### clang
-`make_debug_clang`
+#### gcc
+`make make_debug_gcc`
+
+#### clang
+`make make_debug_clang`
+
+### Release
+
+#### gcc
+`make make_release_gcc`
+
+#### clang
+`make make_release_clang`
 
 ## Wie kann ich es ausführen
 
-`./build/Debug/GB` + eine .gb Datei
+### Debug
+`./build/Debug/GB + eine .gb Datei`
+
+### Release
+`./build/Release/GB + eine .gb Datei`
 
 ## Wichtig
 
