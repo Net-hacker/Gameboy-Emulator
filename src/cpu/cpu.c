@@ -80,32 +80,512 @@ void Debugging(unsigned char* rom, CPU cpu)
 void Run(unsigned char* rom, CPU cpu, bool debug)
 {
   uint8_t opcode = rom[cpu.PC];
+  bool halted = false;
 
-  while (!WindowShouldClose() && cpu.PC <= 20) {
+  while (!WindowShouldClose() && cpu.PC <= 50 && !halted) {
     printf("%02X\n", rom[cpu.PC]);
     switch (opcode) {
       case 0x00:
         printDebug("NOP", "");
         break;
-      case 0x01:
-        cpu.B = (rom[cpu.PC++] > 8) & 0xFF;
+      case 0x01: {
+        cpu.BC = cpu.memory[cpu.PC + 1] << 8 | cpu.memory[cpu.PC + 2];
+        cpu.B = (cpu.BC >> 8) & 0xFF;
+        cpu.C = cpu.BC & 0xFF;
         cpu.PC += 2;
-        cpu.C = rom[cpu.PC++] & 0xFF;
         printDebug("LD BC, u16", "");
         break;
-      case 0x02:
-        cpu.memory[cpu.PC++] = cpu.A;
-        cpu.PC++;
+      }
+      case 0x02: {
+        uint16_t address = (cpu.B << 8) | cpu.C;
+        cpu.memory[address] = cpu.A;
         printDebug("LD (BC), A", "");
         break;
+      }
       case 0x03: {
-        uint16_t BC = (cpu.B << 8) | cpu.C;
-        BC++;
-        cpu.B = (BC >> 8) & 0xFF;
-        cpu.C = BC & 0xFF;
+        cpu.BC = (cpu.B << 8) | cpu.C;
+        cpu.BC;
+        cpu.B = (cpu.BC >> 8) & 0xFF;
+        cpu.C = cpu.BC & 0xFF;
+        printDebug("INC BC", "");
         break;
       }
+      case 0x04:
+        uint8_t pre = cpu.B;
+        cpu.B++;
+        if (cpu.B == 0)
+          cpu.Flag |= FLAG_Z;
+        else
+          cpu.Flag &= ~FLAG_Z;
 
+        cpu.Flag &= ~FLAG_N;
+
+        if ((pre & 0x0F) == 0x00)
+          cpu.Flag |= FLAG_H;
+        else
+          cpu.Flag &= ~FLAG_H;
+        printDebug("INC B", "");
+        break;
+      case 0x05: {
+        uint8_t pre = cpu.B;
+        cpu.B--;
+        if (cpu.B == 0)
+          cpu.Flag |= FLAG_Z;
+        else
+          cpu.Flag &= ~FLAG_Z;
+
+        cpu.Flag |= FLAG_N;
+
+        if ((pre & 0x0F) == 0x00)
+          cpu.Flag |= FLAG_H;
+        else
+          cpu.Flag &= ~FLAG_H;
+        printDebug("DEC B", "");
+        break;
+      }
+      case 0x06:
+        cpu.B = cpu.memory[cpu.PC++];
+        printDebug("LD B, u8", "");
+        break;
+      case 0x07: {
+        uint8_t pre = cpu.A;
+        cpu.A = (cpu.A << 1) | (pre >> 7);
+        cpu.Flag &= ~(FLAG_Z | FLAG_N | FLAG_H);
+        if (pre & 0x80)
+          cpu.Flag |= FLAG_C;
+        else
+          cpu.Flag &= ~FLAG_C;
+        printDebug("RLCA", "");
+        break;
+      }
+      case 0x08: {
+        uint16_t address = cpu.memory[cpu.PC + 1] | cpu.memory[cpu.PC + 2];
+        cpu.memory[address] = cpu.SP & 0xFF;
+        cpu.memory[address++] = (cpu.SP >> 8) & 0xFF;
+        cpu.PC += 2;
+        printDebug("LD (u16), SP", "");
+        break;
+      }
+      case 0x09: {
+        cpu.BC = (cpu.B << 8) | cpu.C;
+        cpu.HL = (cpu.H << 8) | cpu.L;
+        uint32_t result = cpu.HL + cpu.BC;
+        cpu.HL = result & 0xFFFF;
+        cpu.H = (cpu.HL >> 8) & 0xFF;
+        cpu.L = cpu.HL & 0xFF;
+        if (result > 0xFFFF)
+          cpu.Flag |= FLAG_C;
+        else
+          cpu.Flag &= ~FLAG_C;
+
+        if (((cpu.HL & 0x0FFF) + (cpu.BC & 0x0FFF)) > 0x0FFF)
+          cpu.Flag |= FLAG_N;
+        else
+          cpu.Flag &= ~FLAG_N;
+
+        cpu.Flag &= ~FLAG_N;
+        printDebug("ADD HL, BC", "");
+        break;
+      }
+      case 0x0A: {
+        uint16_t address = (cpu.B << 8) | cpu.C;
+        cpu.A = cpu.memory[address];
+        printDebug("LD A, (BC)", "");
+        break;
+      }
+      case 0x0B: {
+        cpu.BC = (cpu.B << 8) | cpu.C;
+        cpu.BC--;
+        cpu.B = (cpu.BC >> 8) & 0xFF;
+        cpu.C = cpu.BC & 0xFF;
+        printDebug("DEC BC", "");
+        break;
+      }
+      case 0x0C: {
+        uint8_t pre = cpu.C;
+        cpu.C++;
+        if (cpu.C == 0)
+          cpu.Flag |= FLAG_Z;
+        else
+          cpu.Flag &= ~FLAG_Z;
+
+        cpu.Flag &= ~FLAG_N;
+
+        if ((pre & 0x0F) == 0x00)
+          cpu.Flag |= FLAG_H;
+        else
+          cpu.Flag &= ~FLAG_H;
+        printDebug("INC C", "");
+        break;
+      }
+      case 0x0D: {
+        uint8_t pre = cpu.C;
+        cpu.C--;
+        if (cpu.C == 0)
+          cpu.Flag |= FLAG_Z;
+        else
+          cpu.Flag &= ~FLAG_Z;
+
+        cpu.Flag |= FLAG_N;
+
+        if ((pre & 0x0F) == 0x00)
+          cpu.Flag |= FLAG_H;
+        else
+          cpu.Flag &= ~FLAG_H;
+        printDebug("DEC C", "");
+        break;
+      }
+      case 0x0E:
+        cpu.C = cpu.memory[cpu.PC++];
+        printDebug("LD C, u8", "");
+        break;
+      case 0x0F: {
+        uint8_t carry = (cpu.A >> 7) & 0x01;
+        cpu.A = (cpu.A >> 1) | (carry << 7);
+        cpu.Flag &= ~(FLAG_N | FLAG_Z | FLAG_H);
+        if (carry)
+          cpu.Flag |= FLAG_C;
+        else
+          cpu.Flag &= ~FLAG_C;
+        printDebug("RRCA", "");
+        break;
+      }
+      case 0x10:
+        //halted = true;
+        printDebug("STOP", "");
+        break;
+      case 0x11: {
+        cpu.DE = (cpu.memory[cpu.PC + 2] << 8) | cpu.memory[cpu.PC + 1];
+        cpu.D = (cpu.DE >> 8) & 0xFF;
+        cpu.E = cpu.DE & 0xFF;
+        cpu.PC += 2;
+        printDebug("LD DE, u16", "");
+        break;
+      }
+      case 0x12: {
+        uint16_t address = (cpu.D << 8) | cpu.E;
+        cpu.memory[address] = cpu.A;
+        printDebug("LD (DE), A", "");
+        break;
+      }
+      case 0x13: {
+        cpu.DE = (cpu.D << 8) | cpu.E;
+        cpu.DE++;
+        cpu.D = (cpu.DE >> 8) & 0xFF;
+        cpu.E = cpu.DE & 0xFF;
+        printDebug("INC DE", "");
+        break;
+      }
+      case 0x14: {
+        uint8_t pre = cpu.D;
+        cpu.D++;
+        if (cpu.D == 0)
+          cpu.Flag |= FLAG_Z;
+        else
+          cpu.Flag &= ~FLAG_Z;
+
+        cpu.Flag &= ~FLAG_N;
+
+        if ((pre & 0x0F) == 0x00)
+          cpu.Flag |= FLAG_H;
+        else
+          cpu.Flag &= ~FLAG_H;
+        printDebug("INC D", "");
+        break;
+      }
+      case 0x15: {
+        uint8_t pre = cpu.D;
+        cpu.D--;
+        if (cpu.D == 0)
+          cpu.Flag |= FLAG_Z;
+        else
+          cpu.Flag &= ~FLAG_Z;
+
+        cpu.Flag |= FLAG_N;
+
+        if ((pre & 0x0F) == 0x00)
+          cpu.Flag |= FLAG_H;
+        else
+          cpu.Flag &= ~FLAG_H;
+        printDebug("DEC D", "");
+        break;
+      }
+      case 0x16:
+        cpu.D = cpu.memory[cpu.PC++];
+        printDebug("LD D, u8", "");
+        break;
+      case 0x17: {
+        uint8_t carry = (cpu.Flag & FLAG_C) ? 1 : 0;
+        uint8_t new_carry = (cpu.A & 0x80) ? 1 : 0;
+        cpu.A = (cpu.A << 1) | carry;
+        cpu.Flag &= ~(FLAG_Z | FLAG_N | FLAG_H | FLAG_C);
+        if (new_carry)
+          cpu.Flag |= FLAG_C;
+        printDebug("RLA", "");
+        break;
+      }
+      case 0x18: {
+        int8_t offset = cpu.memory[cpu.PC++];
+        cpu.PC += offset;
+        printDebug("JR i8", "");
+        break;
+      }
+      case 0x19: {
+        cpu.DE = (cpu.D << 8) | cpu.E;
+        cpu.HL = (cpu.H << 8) | cpu.L;
+        uint32_t result = cpu.HL + cpu.DE;
+        cpu.HL = result & 0xFFFF;
+        cpu.H = (cpu.HL >> 8) & 0xFF;
+        cpu.L = cpu.HL & 0xFF;
+        if (result > 0xFFFF)
+          cpu.Flag |= FLAG_C;
+        else
+          cpu.Flag &= ~FLAG_C;
+
+        if (((cpu.HL & 0x0FFF) + (cpu.DE & 0x0FFF)) > 0x0FFF)
+          cpu.Flag |= FLAG_N;
+        else
+          cpu.Flag &= ~FLAG_N;
+
+        cpu.Flag &= ~FLAG_N;
+        printDebug("ADD HL, DE", "");
+        break;
+      }
+      case 0x1A: {
+        uint16_t address = (cpu.D << 8) | cpu.E;
+        cpu.A = cpu.memory[address];
+        printDebug("LD A, (DE)", "");
+        break;
+      }
+      case 0x1B: {
+        cpu.DE = (cpu.D << 8) | cpu.E;
+        cpu.DE--;
+        cpu.D = (cpu.DE >> 8) & 0xFF;
+        cpu.E = cpu.DE & 0xFF;
+        printDebug("DEC DE", "");
+        break;
+      }
+      case 0x1C: {
+        uint8_t pre = cpu.E;
+        cpu.E++;
+        if (cpu.E == 0)
+          cpu.Flag |= FLAG_Z;
+        else
+          cpu.Flag &= ~FLAG_Z;
+
+        cpu.Flag &= ~FLAG_N;
+
+        if ((pre & 0x0F) == 0x00)
+          cpu.Flag |= FLAG_H;
+        else
+          cpu.Flag &= ~FLAG_H;
+        printDebug("INC E", "");
+        break;
+      }
+      case 0x1D: {
+        uint8_t pre = cpu.E;
+        cpu.E--;
+        if (cpu.E == 0)
+          cpu.Flag |= FLAG_Z;
+        else
+          cpu.Flag &= ~FLAG_Z;
+
+        cpu.Flag |= FLAG_N;
+
+        if ((pre & 0x0F) == 0x00)
+          cpu.Flag |= FLAG_H;
+        else
+          cpu.Flag &= ~FLAG_H;
+        printDebug("DEC E", "");
+        break;
+      }
+      case 0x1E:
+        cpu.E = cpu.memory[cpu.PC++];
+        printDebug("LD E, u8", "");
+        break;
+      case 0x1F: {
+        bool pre = (cpu.Flag & FLAG_C) ? true : false;
+        uint8_t bit0 = cpu.A & 0x01;
+        cpu.A = (cpu.A >> 1) | (pre << 7);
+        cpu.Flag &= ~(FLAG_Z | FLAG_N | FLAG_H);
+        if (bit0)
+          cpu.Flag |= FLAG_C;
+        else
+          cpu.Flag &= ~FLAG_C;
+      }
+      case 0x20: {
+        int8_t offset = cpu.memory[cpu.PC++];
+        if (!(cpu.Flag & FLAG_Z))
+          cpu.PC += offset;
+        printDebug("JR NZ, i8", "");
+        break;
+      }
+      case 0x21:
+        cpu.HL = (cpu.memory[cpu.PC + 2] << 8) | cpu.memory[cpu.PC + 1];
+        cpu.H = (cpu.HL >> 8) & 0xFF;
+        cpu.L = cpu.HL & 0xFF;
+        cpu.PC += 2;
+        printDebug("LD HL, u16", "");
+        break;
+      case 0x22:
+        cpu.HL = (cpu.H << 8) | cpu.L;
+        cpu.memory[cpu.HL] = cpu.A;
+        cpu.HL++;
+        cpu.H = (cpu.HL >> 8) & 0xFF;
+        cpu.L = cpu.HL & 0xFF;
+        printDebug("LD (HL+), A", "");
+        break;
+      case 0x23:
+        cpu.HL = (cpu.H << 8) | cpu.L;
+        cpu.HL++;
+        cpu.H = (cpu.HL >> 8) & 0xFF;
+        cpu.L = cpu.HL & 0xFF;
+        printDebug("INC HL", "");
+        break;
+      case 0x24: {
+        uint8_t pre = cpu.H;
+        cpu.H++;
+        cpu.Flag &= ~FLAG_N;
+        if (cpu.H == 0)
+          cpu.Flag |= FLAG_Z;
+        else
+          cpu.Flag &= ~FLAG_Z;
+
+        if ((pre & 0x0F) == 0x0F)
+          cpu.Flag |= FLAG_H;
+        else
+          cpu.Flag &= ~FLAG_H;
+        printDebug("INC H", "");
+        break;
+      }
+      case 0x25: {
+        uint8_t pre = cpu.H;
+        cpu.H--;
+        cpu.Flag |= FLAG_N;
+        if (cpu.H == 0)
+          cpu.Flag |= FLAG_Z;
+        else
+          cpu.Flag &= ~FLAG_Z;
+
+        if ((pre & 0x0F) == 0x00)
+          cpu.Flag |= FLAG_H;
+        else
+          cpu.Flag &= ~FLAG_H;
+        printDebug("DEC H", "");
+        break;
+      }
+      case 0x26:
+        cpu.H = cpu.memory[cpu.PC++];
+        printDebug("LD H, u8", "");
+        break;
+      case 0x27: {
+        uint8_t correction = 0;
+        uint8_t a = cpu.A;
+        if (cpu.Flag & FLAG_H || (a & 0x0F) > 9)
+          correction |= 0x06;
+
+        if (cpu.Flag & FLAG_C || a > 0x99)
+          correction |= 0x60;
+
+        if (cpu.Flag & FLAG_N)
+          a -= correction;
+        else
+          a += correction;
+
+        cpu.Flag &= ~(FLAG_H | FLAG_Z);
+        if (a == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if (correction & 0x60)
+          cpu.Flag |= FLAG_C;
+
+        cpu.A = a;
+        printDebug("DAA", "");
+        break;
+      }
+      case 0x28: {
+        int8_t offset = cpu.memory[cpu.PC++];
+        if (cpu.Flag & FLAG_Z)
+          cpu.PC += offset;
+        printDebug("JR Z, i8", "");
+        break;
+      }
+      case 0x29: {
+        cpu.HL = (cpu.H << 8) | cpu.L;
+        uint32_t result = cpu.HL + cpu.HL;
+        cpu.HL = result & 0xFFFF;
+        cpu.H = (cpu.HL >> 8) & 0xFF;
+        cpu.L = cpu.HL & 0xFF;
+        if (((cpu.HL & 0x0FFF) + (cpu.HL & 0x0FFF)) > 0x0FFF)
+          cpu.Flag |= FLAG_H;
+        else
+          cpu.Flag &= ~FLAG_H;
+
+        if (result > 0xFFFF)
+          cpu.Flag |= FLAG_C;
+        else
+          cpu.Flag &= ~FLAG_C;
+        cpu.Flag &= ~FLAG_N;
+        printDebug("ADD HL, HL", "");
+        break;
+      }
+      case 0x2A:
+        cpu.HL = (cpu.H << 8) | cpu.L;
+        cpu.A = cpu.memory[cpu.HL];
+        cpu.HL++;
+        cpu.H = (cpu.HL >> 8) & 0xFF;
+        cpu.L = cpu.HL & 0xFF;
+        printDebug("LD A, (HL+)", "");
+        break;
+      case 0x2B:
+        cpu.HL = (cpu.H << 8) | cpu.L;
+        cpu.HL--;
+        cpu.H = (cpu.HL >> 8) & 0xFF;
+        cpu.L = cpu.HL & 0xFF;
+        printDebug("DEC HL", "");
+        break;
+      case 0x2C: {
+        uint8_t pre = cpu.L;
+        cpu.L++;
+        cpu.Flag &= ~FLAG_N;
+        if (cpu.L == 0)
+          cpu.Flag |= FLAG_Z;
+        else
+          cpu.Flag &= ~FLAG_Z;
+
+        if ((pre & 0x0F) == 0x0F)
+          cpu.Flag |= FLAG_H;
+        else
+          cpu.Flag &= ~FLAG_H;
+        printDebug("INC L", "");
+        break;
+      }
+      case 0x2D: {
+        uint8_t pre = cpu.L;
+        cpu.L--;
+        cpu.Flag |= FLAG_N;
+        if (cpu.L == 0)
+          cpu.Flag |= FLAG_Z;
+        else
+          cpu.Flag &= ~FLAG_Z;
+
+        if ((pre & 0x0F) == 0x0F)
+          cpu.Flag |= FLAG_H;
+        else
+          cpu.Flag &= ~FLAG_H;
+        printDebug("DEC L", "");
+        break;
+      }
+      case 0x2E:
+        cpu.L = cpu.memory[cpu.PC++];
+        printDebug("LD L, u8", "");
+        break;
+      case 0x2F:
+        cpu.A = ~cpu.A;
+        cpu.Flag |= FLAG_N;
+        cpu.Flag |= FLAG_H;
+        printDebug("CPL", "");
+        break;
       default:
         printError("OpCode not found!", "");
         break;
