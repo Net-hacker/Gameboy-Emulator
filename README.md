@@ -22,18 +22,18 @@ oder
 ### Debug
 
 #### gcc
-`make make_debug_gcc`
+`make debug_gcc`
 
 #### clang
-`make make_debug_clang`
+`make debug_clang`
 
 ### Release
 
 #### gcc
-`make make_release_gcc`
+`make release_gcc`
 
 #### clang
-`make make_release_clang`
+`make release_clang`
 
 ## Wie kann ich es ausführen
 

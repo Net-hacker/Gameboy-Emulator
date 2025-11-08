@@ -8,6 +8,11 @@
 const uint16_t WIDTH = 160;
 const uint16_t HEIGHT = 144;
 
+/**
+ * Eine Fensterinstanz wird initiiert.
+ *
+ * Erstellt ein Fenster, spielt den Startup Sound ab und spielt die Startup Animation ab.
+ */
 void StartInstance()
 {
   InitWindow(WIDTH, HEIGHT, "Gameboy Emulator");

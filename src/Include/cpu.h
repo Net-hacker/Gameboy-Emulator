@@ -1,7 +1,7 @@
 #ifndef _CPU_H
 #define _CPU_H
 
-#define MEM_SIZE 0x10000
+#define MEM_SIZE 0x10000  //65 KB
 
 #define FLAG_C 0x10
 #define FLAG_H 0x20
