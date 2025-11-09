@@ -1,7 +1,7 @@
 #ifndef _CPU_H
 #define _CPU_H
 
-#define MEM_SIZE 0x10000
+#define MEM_SIZE 0x10000 //65 KB
 
 #define FLAG_C 0x10
 #define FLAG_H 0x20
@@ -19,7 +19,7 @@ typedef struct {
 
 extern uint8_t opcode;
 
-void Debugging(unsigned char* rom, CPU cpu);
-void Run(unsigned char* rom, CPU cpu, bool debug);
+void Debugging(unsigned char* rom, CPU cpu, long size);
+void Run(unsigned char* rom, CPU cpu, bool debug, long size);
 
 #endif

@@ -28,7 +28,10 @@ int main(int argc, char *argv[])
     return 1;
   }
 
-  unsigned char* rom = ReadFile(file);
+  fseek(file, 0, SEEK_END);
+  long size = ftell(file);
+  fseek(file, 0, SEEK_SET);
+  unsigned char* rom = ReadFile(file, size);
 
   CPU cpu;
   cpu.A = 0;
@@ -44,7 +47,7 @@ int main(int argc, char *argv[])
   cpu.PC = 0;
   cpu.SP = 0;
 
-  Run(rom, cpu, debug);
+  Run(rom, cpu, debug, size);
 
   return 0;
 }

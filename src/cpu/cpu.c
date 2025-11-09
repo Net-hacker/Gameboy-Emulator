@@ -12,8 +12,9 @@
  *
  * @param rom Der Inhalt der .gb Datei als unsigned char*.
  * @param cpu Die CPU und ihre Register, Program Counter, Stack Pointer und Flaggen.
+ * @param size Die Größe der .gb Datei.
  */
-void Debugging(unsigned char* rom, CPU cpu)
+void Debugging(unsigned char* rom, CPU cpu, long size)
 {
   char input[5];
   char* converter = (char*) malloc(sizeof(char));
@@ -51,6 +52,7 @@ void Debugging(unsigned char* rom, CPU cpu)
       printDebug("Der Wert von Register SP: ", "%d", converter[0]);
     } else if (checkString(input, "Mem")) {
       FILE *mem = fopen("Memory.txt", "w");
+      printDebug("Groesse: ", "%d", sizeof(cpu.memory));
       fprintf(mem, "  ");
       for (size_t i = 0; i < sizeof(cpu.memory); i++) {
         fprintf(mem, "%02x ", cpu.memory[i]);
@@ -62,13 +64,17 @@ void Debugging(unsigned char* rom, CPU cpu)
       fclose(mem);
       printDebug("Memory Dumped", "");
     } else if (checkString(input, "Rom")) {
-      FILE *roms = fopen("Rom.txt", "w");
-      for (size_t i = 0; i < sizeof(rom); i++) {
-        fprintf(roms, "%02X", rom[i]);
+      FILE *rom_d = fopen("Rom.txt", "w");
+      printDebug("Groesse: ", "%d", size);
+      fprintf(rom_d, "  ");
+      for (size_t i = 0; i < size; i++) {
+        fprintf(rom_d, "%02x ", rom[i]);
         if ((i + 1) % 16 == 0)
-          fprintf(roms, "\n");
+          fprintf(rom_d, "  %06X\n");
+        if ((i + 1) % 8 == 0)
+          fprintf(rom_d, "  ");
       }
-      fclose(roms);
+      fclose(rom_d);
       printDebug("Rom Dumped", "");
     } else if (checkString(input, "help")) {
       printf("Register A-L: A B C ... L\n");
@@ -90,8 +96,9 @@ void Debugging(unsigned char* rom, CPU cpu)
  * @param rom Der Inhalt der .gb Datei als unsigned char*.
  * @param cpu Die CPU und ihre Register, Program Counter, Stack Pointer und Flaggen.
  * @param debug Wenn true, springt am Ende des Programms zum DebugMenu.
+ * @param size Die Größe der .gb Datei.
  */
-void Run(unsigned char* rom, CPU cpu, bool debug)
+void Run(unsigned char* rom, CPU cpu, bool debug, long size)
 {
   uint8_t opcode = rom[cpu.PC];
   bool halted = false;
@@ -999,6 +1006,567 @@ void Run(unsigned char* rom, CPU cpu, bool debug)
       case 0x7F:
         printDebug("LD A, A", "");
         break;
+      case 0x80: {
+        uint8_t a = cpu.A;
+        uint8_t b = cpu.B;
+        uint16_t result = a + b;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_Z | FLAG_C);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if (((a & 0x0F) + (b & 0x0F)) > 0x0F)
+          cpu.Flag |= FLAG_H;
+
+        if (result > 0xFF)
+          cpu.Flag |= FLAG_C;
+        printDebug("ADD A, B", "");
+        break;
+      }
+      case 0x81: {
+        uint8_t a = cpu.A;
+        uint8_t c = cpu.C;
+        uint16_t result = a + c;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_Z | FLAG_C);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if (((a & 0x0F) + (c & 0x0F)) > 0x0F)
+          cpu.Flag |= FLAG_H;
+
+        if (result > 0xFF)
+          cpu.Flag |= FLAG_C;
+        printDebug("ADD A, C", "");
+        break;
+      }
+      case 0x82: {
+        uint8_t a = cpu.A;
+        uint8_t d = cpu.D;
+        uint16_t result = a + d;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_Z | FLAG_C);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if (((a & 0x0F) + (d & 0x0F)) > 0x0F)
+          cpu.Flag |= FLAG_H;
+
+        if (result > 0xFF)
+          cpu.Flag |= FLAG_C;
+        printDebug("ADD A, D", "");
+        break;
+      }
+      case 0x83: {
+        uint8_t a = cpu.A;
+        uint8_t e = cpu.E;
+        uint16_t result = a + e;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_Z | FLAG_C);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if (((a & 0x0F) + (e & 0x0F)) > 0x0F)
+          cpu.Flag |= FLAG_H;
+
+        if (result > 0xFF)
+          cpu.Flag |= FLAG_C;
+        printDebug("ADD A, E", "");
+        break;
+      }
+      case 0x84: {
+        uint8_t a = cpu.A;
+        uint8_t h = cpu.H;
+        uint16_t result = a + h;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_Z | FLAG_C);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if (((a & 0x0F) + (h & 0x0F)) > 0x0F)
+          cpu.Flag |= FLAG_H;
+
+        if (result > 0xFF)
+          cpu.Flag |= FLAG_C;
+        printDebug("ADD A, H", "");
+        break;
+      }
+      case 0x85: {
+        uint8_t a = cpu.A;
+        uint8_t l = cpu.L;
+        uint16_t result = a + l;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_Z | FLAG_C);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if (((a & 0x0F) + (l & 0x0F)) > 0x0F)
+          cpu.Flag |= FLAG_H;
+
+        if (result > 0xFF)
+          cpu.Flag |= FLAG_C;
+        printDebug("ADD A, L", "");
+        break;
+      }
+      case 0x86: {
+        uint8_t a = cpu.A;
+        uint8_t value = cpu.memory[cpu.HL];
+        uint16_t result = a + value;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_Z | FLAG_C);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if (((a & 0x0F) + (value & 0x0F)) > 0x0F)
+          cpu.Flag |= FLAG_H;
+
+        if (result > 0xFF)
+          cpu.Flag |= FLAG_C;
+        printDebug("ADD A, (HL)", "");
+        break;
+      }
+      case 0x87: {
+        uint8_t a = cpu.A;
+        uint16_t result = a + a;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_Z | FLAG_C);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if (((a & 0x0F) + (a & 0x0F)) > 0x0F)
+          cpu.Flag |= FLAG_H;
+
+        if (result > 0xFF)
+          cpu.Flag |= FLAG_C;
+        printDebug("ADD A, A", "");
+        break;
+      }
+      case 0x88: {
+        uint8_t a = cpu.A;
+        uint8_t b = cpu.B;
+        uint8_t carry = (cpu.Flag & FLAG_C) ? 1 : 0;
+        uint16_t result = a + b + carry;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_Z | FLAG_C);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if (((a & 0x0F) + (b & 0x0F) + carry) > 0x0F)
+          cpu.Flag |= FLAG_H;
+
+        if (result > 0xFF)
+          cpu.Flag |= FLAG_C;
+        printDebug("ADC A, B", "");
+        break;
+      }
+      case 0x89: {
+        uint8_t a = cpu.A;
+        uint8_t c = cpu.C;
+        uint8_t carry = (cpu.Flag & FLAG_C) ? 1 : 0;
+        uint16_t result = a + c + carry;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_Z | FLAG_C);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if (((a & 0x0F) + (c & 0x0F) + carry) > 0x0F)
+          cpu.Flag |= FLAG_H;
+
+        if (result > 0xFF)
+          cpu.Flag |= FLAG_C;
+        printDebug("ADC A, C", "");
+        break;
+      }
+      case 0x8A: {
+        uint8_t a = cpu.A;
+        uint8_t d = cpu.D;
+        uint8_t carry = (cpu.Flag & FLAG_C) ? 1 : 0;
+        uint16_t result = a + d + carry;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_Z | FLAG_C);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if (((a & 0x0F) + (d & 0x0F) + carry) > 0x0F)
+          cpu.Flag |= FLAG_H;
+
+        if (result > 0xFF)
+          cpu.Flag |= FLAG_C;
+        printDebug("ADC A, D", "");
+        break;
+      }
+      case 0x8B: {
+        uint8_t a = cpu.A;
+        uint8_t e = cpu.E;
+        uint8_t carry = (cpu.Flag & FLAG_C) ? 1 : 0;
+        uint16_t result = a + e + carry;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_Z | FLAG_C);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if (((a & 0x0F) + (e & 0x0F) + carry) > 0x0F)
+          cpu.Flag |= FLAG_H;
+
+        if (result > 0xFF)
+          cpu.Flag |= FLAG_C;
+        printDebug("ADC A, E", "");
+        break;
+      }
+      case 0x8C: {
+        uint8_t a = cpu.A;
+        uint8_t h = cpu.H;
+        uint8_t carry = (cpu.Flag & FLAG_C) ? 1 : 0;
+        uint16_t result = a + h + carry;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_Z | FLAG_C);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if (((a & 0x0F) + (h & 0x0F) + carry) > 0x0F)
+          cpu.Flag |= FLAG_H;
+
+        if (result > 0xFF)
+          cpu.Flag |= FLAG_C;
+        printDebug("ADC A, H", "");
+        break;
+      }
+      case 0x8D: {
+        uint8_t a = cpu.A;
+        uint8_t l = cpu.L;
+        uint8_t carry = (cpu.Flag & FLAG_C) ? 1 : 0;
+        uint16_t result = a + l + carry;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_Z | FLAG_C);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if (((a & 0x0F) + (l & 0x0F) + carry) > 0x0F)
+          cpu.Flag |= FLAG_H;
+
+        if (result > 0xFF)
+          cpu.Flag |= FLAG_C;
+        printDebug("ADC A, L", "");
+        break;
+      }
+      case 0x8E: {
+        uint8_t a = cpu.A;
+        uint8_t value = cpu.memory[cpu.HL];
+        uint8_t carry = (cpu.Flag & FLAG_C) ? 1 : 0;
+        uint16_t result = a + value + carry;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_Z | FLAG_C);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if (((a & 0x0F) + (value & 0x0F) + carry) > 0x0F)
+          cpu.Flag |= FLAG_H;
+
+        if (result > 0xFF)
+          cpu.Flag |= FLAG_C;
+        printDebug("ADC A, (HL)", "");
+        break;
+      }
+      case 0x8F: {
+        uint8_t a = cpu.A;
+        uint8_t carry = (cpu.Flag & FLAG_C) ? 1 : 0;
+        uint16_t result = a + a + carry;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_Z | FLAG_C);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if (((a & 0x0F) + (a & 0x0F) + carry) > 0x0F)
+          cpu.Flag |= FLAG_H;
+
+        if (result > 0xFF)
+          cpu.Flag |= FLAG_C;
+        printDebug("ADC A, A", "");
+        break;
+      }
+      case 0x90: {
+        uint8_t a = cpu.A;
+        uint8_t b = cpu.B;
+        uint16_t result = a - b;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if ((a & 0x0F) < (b & 0x0F))
+          cpu.Flag |= FLAG_H;
+
+        if (a < b)
+          cpu.Flag |= FLAG_C;
+        printDebug("SUB A, B", "");
+        break;
+      }
+      case 0x91: {
+        uint8_t a = cpu.A;
+        uint8_t c = cpu.C;
+        uint16_t result = a - c;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if ((a & 0x0F) < (c & 0x0F))
+          cpu.Flag |= FLAG_H;
+
+        if (a < c)
+          cpu.Flag |= FLAG_C;
+        printDebug("SUB A, C", "");
+        break;
+      }
+      case 0x92: {
+        uint8_t a = cpu.A;
+        uint8_t d = cpu.D;
+        uint16_t result = a - d;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if ((a & 0x0F) < (d & 0x0F))
+          cpu.Flag |= FLAG_H;
+
+        if (a < d)
+          cpu.Flag |= FLAG_C;
+        printDebug("SUB A, D", "");
+        break;
+      }
+      case 0x93: {
+        uint8_t a = cpu.A;
+        uint8_t e = cpu.E;
+        uint16_t result = a - e;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if ((a & 0x0F) < (e & 0x0F))
+          cpu.Flag |= FLAG_H;
+
+        if (a < e)
+          cpu.Flag |= FLAG_C;
+        printDebug("SUB A, E", "");
+        break;
+      }
+      case 0x94: {
+        uint8_t a = cpu.A;
+        uint8_t h = cpu.H;
+        uint16_t result = a - h;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if ((a & 0x0F) < (h & 0x0F))
+          cpu.Flag |= FLAG_H;
+
+        if (a < h)
+          cpu.Flag |= FLAG_C;
+        printDebug("SUB A, H", "");
+        break;
+      }
+      case 0x95: {
+        uint8_t a = cpu.A;
+        uint8_t l = cpu.L;
+        uint16_t result = a - l;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if ((a & 0x0F) < (l & 0x0F))
+          cpu.Flag |= FLAG_H;
+
+        if (a < l)
+          cpu.Flag |= FLAG_C;
+        printDebug("SUB A, L", "");
+        break;
+      }
+      case 0x96: {
+        uint8_t a = cpu.A;
+        uint8_t value = cpu.memory[cpu.HL];
+        uint16_t result = a - value;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if ((a & 0x0F) < (value & 0x0F))
+          cpu.Flag |= FLAG_H;
+
+        if (a < value)
+          cpu.Flag |= FLAG_C;
+        printDebug("SUB A, (HL)", "");
+        break;
+      }
+      case 0x97:
+        cpu.A = 0;
+        cpu.Flag &= ~(FLAG_H | FLAG_C);
+        cpu.Flag |= FLAG_N | FLAG_Z;
+        printDebug("SUB A, A", "");
+        break;
+      case 0x98: {
+        uint8_t a = cpu.A;
+        uint8_t b = cpu.B;
+        uint8_t carry = (cpu.Flag & FLAG_C) ? 1 : 0;
+        uint16_t result = a - b - carry;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if ((a & 0x0F) < ((b & 0x0F) + carry))
+          cpu.Flag |= FLAG_H;
+
+        if (a < (b + carry))
+          cpu.Flag |= FLAG_C;
+        printDebug("SBC A, B", "");
+        break;
+      }
+      case 0x99: {
+        uint8_t a = cpu.A;
+        uint8_t c = cpu.C;
+        uint8_t carry = (cpu.Flag & FLAG_C) ? 1 : 0;
+        uint16_t result = a - c - carry;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if ((a & 0x0F) < ((c & 0x0F) + carry))
+          cpu.Flag |= FLAG_H;
+
+        if (a < (c + carry))
+          cpu.Flag |= FLAG_C;
+        printDebug("SBC A, C", "");
+        break;
+      }
+      case 0x9A: {
+        uint8_t a = cpu.A;
+        uint8_t d = cpu.D;
+        uint8_t carry = (cpu.Flag & FLAG_C) ? 1 : 0;
+        uint16_t result = a - d - carry;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if ((a & 0x0F) < ((d & 0x0F) + carry))
+          cpu.Flag |= FLAG_H;
+
+        if (a < (d + carry))
+          cpu.Flag |= FLAG_C;
+        printDebug("SBC A, D", "");
+        break;
+      }
+      case 0x9B: {
+        uint8_t a = cpu.A;
+        uint8_t e = cpu.E;
+        uint8_t carry = (cpu.Flag & FLAG_C) ? 1 : 0;
+        uint16_t result = a - e - carry;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if ((a & 0x0F) < ((e & 0x0F) + carry))
+          cpu.Flag |= FLAG_H;
+
+        if (a < (e + carry))
+          cpu.Flag |= FLAG_C;
+        printDebug("SBC A, E", "");
+        break;
+      }
+      case 0x9C: {
+        uint8_t a = cpu.A;
+        uint8_t h = cpu.H;
+        uint8_t carry = (cpu.Flag & FLAG_C) ? 1 : 0;
+        uint16_t result = a - h - carry;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if ((a & 0x0F) < ((h & 0x0F) + carry))
+          cpu.Flag |= FLAG_H;
+
+        if (a < (h + carry))
+          cpu.Flag |= FLAG_C;
+        printDebug("SBC A, H", "");
+        break;
+      }
+      case 0x9D: {
+        uint8_t a = cpu.A;
+        uint8_t l = cpu.L;
+        uint8_t carry = (cpu.Flag & FLAG_C) ? 1 : 0;
+        uint16_t result = a - l - carry;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if ((a & 0x0F) < ((l & 0x0F) + carry))
+          cpu.Flag |= FLAG_H;
+
+        if (a < (l + carry))
+          cpu.Flag |= FLAG_C;
+        printDebug("SBC A, L", "");
+        break;
+      }
+      case 0x9E: {
+        uint8_t a = cpu.A;
+        uint8_t value = cpu.memory[cpu.HL];
+        uint8_t carry = (cpu.Flag & FLAG_C) ? 1 : 0;
+        uint16_t result = a - value - carry;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if ((a & 0x0F) < ((value & 0x0F) + carry))
+          cpu.Flag |= FLAG_H;
+
+        if (a < (value + carry))
+          cpu.Flag |= FLAG_C;
+        printDebug("SBC A, (HL)", "");
+        break;
+      }
+      case 0x9F: {
+        uint8_t a = cpu.A;
+        uint8_t carry = (cpu.Flag & FLAG_C) ? 1 : 0;
+        uint16_t result = a - a - carry;
+        cpu.A = result & 0xFF;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+
+        if ((a & 0x0F) < ((a & 0x0F) + carry))
+          cpu.Flag |= FLAG_H;
+
+        if (carry)
+          cpu.Flag |= FLAG_C;
+        printDebug("SBC A, A", "");
+        break;
+      }
       default:
         printError("OpCode not found!", "");
         break;
@@ -1007,6 +1575,6 @@ void Run(unsigned char* rom, CPU cpu, bool debug)
     opcode = rom[cpu.PC];
   }
   if (debug) {
-    Debugging(rom, cpu);
+    Debugging(rom, cpu, size);
   }
 }

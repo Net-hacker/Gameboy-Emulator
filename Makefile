@@ -7,14 +7,14 @@ INPUT_FILES = src/main.c src/rom/rom.c src/cpu/cpu.c src/debug/debug.c
 OUTPUT_FILE_DEBUG = -o build/Debug/GB
 OUTPUT_FILE_RELEASE = -o build/Release/GB
 
-make_gcc_debug:
+gcc_debug:
 	$(CC_GCC) $(CFLAGS_DEBUG) $(INPUT_FILES) $(OUTPUT_FILE_DEBUG)
 
-make_clang_debug:
+clang_debug:
 	$(CC_CLANG) $(CFLAGS_DEBUG) $(INPUT_FILES) $(OUTPUT_FILE_DEBUG)
 
-make_gcc_release:
+gcc_release:
 	$(CC_GCC) $(CFLAGS_RELEASE) $(INPUT_FILES) $(OUTPUT_FILE_RELEASE)
 
-make_clang_release:
+clang_release:
 	$(CC_CLANG) $(CFLAGS_RELEASE) $(INPUT_FILES) $(OUTPUT_FILE_RELEASE)

@@ -20,16 +20,16 @@ oder
 ### Debug
 
 #### gcc
-`make make_gcc_debug`
+`make gcc_debug`
 #### clang
-`make make_clang_debug`
+`make clang_debug`
 
 ### Release
 
 #### gcc
-`make make_gcc_release`
+`make gcc_release`
 #### clang
-`make make_clang_release`
+`make clang_release`
 
 ## Wie kann ich es ausführen
 

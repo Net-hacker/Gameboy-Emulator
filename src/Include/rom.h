@@ -9,6 +9,6 @@
 extern unsigned char *rom;
 extern long size;
 
-unsigned char* ReadFile(FILE *file);
+unsigned char* ReadFile(FILE *file, long size);
 
 #endif
