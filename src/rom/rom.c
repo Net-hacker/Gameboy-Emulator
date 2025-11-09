@@ -9,14 +9,11 @@
  * Hier wird die .gb Datei eingelesen und in eine Variable gespeichert um damit weiterzuarbeiten.
  *
  * @param *file Die Datei als FILE.
+ * @param size Die Größe der .gb Datei.
  * @return Eine unsigned char* Variable mit dem Inhalt der .gb Datei.
  */
-unsigned char* ReadFile(FILE *file)
+unsigned char* ReadFile(FILE *file, long size)
 {
-  fseek(file, 0, SEEK_END);
-  long size = ftell(file);
-  fseek(file, 0, SEEK_SET);
-
   unsigned char *rom = (unsigned char*) malloc(size);
   if (rom == NULL) {
     printf("ERROR\n");

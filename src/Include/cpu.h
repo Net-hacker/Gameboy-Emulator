@@ -19,7 +19,7 @@ typedef struct {
 
 extern uint8_t opcode;
 
-void Debugging(unsigned char* rom, CPU cpu);
-void Run(unsigned char* rom, CPU cpu, bool debug);
+void Debugging(unsigned char* rom, CPU cpu, long size);
+void Run(unsigned char* rom, CPU cpu, bool debug, long size);
 
 #endif
