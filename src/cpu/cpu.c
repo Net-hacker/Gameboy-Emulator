@@ -1567,6 +1567,304 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         printDebug("SBC A, A", "");
         break;
       }
+      case 0xA0:
+        cpu.A &= cpu.B;
+        cpu.Flag &= ~(FLAG_N | FLAG_C | FLAG_Z);
+        cpu.Flag |= FLAG_H;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("AND A, B", "");
+        break;
+      case 0xA1:
+        cpu.A &= cpu.C;
+        cpu.Flag &= ~(FLAG_N | FLAG_C | FLAG_Z);
+        cpu.Flag |= FLAG_H;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("AND A, C", "");
+        break;
+      case 0xA2:
+        cpu.A &= cpu.D;
+        cpu.Flag &= ~(FLAG_N | FLAG_C | FLAG_Z);
+        cpu.Flag |= FLAG_H;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("AND A, D", "");
+        break;
+      case 0xA3:
+        cpu.A &= cpu.E;
+        cpu.Flag &= ~(FLAG_N | FLAG_C | FLAG_Z);
+        cpu.Flag |= FLAG_H;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("AND A, E", "");
+        break;
+      case 0xA4:
+        cpu.A &= cpu.H;
+        cpu.Flag &= ~(FLAG_N | FLAG_C | FLAG_Z);
+        cpu.Flag |= FLAG_H;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("AND A, H", "");
+        break;
+      case 0xA5:
+        cpu.A &= cpu.L;
+        cpu.Flag &= ~(FLAG_N | FLAG_C | FLAG_Z);
+        cpu.Flag |= FLAG_H;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("AND A, L", "");
+        break;
+      case 0xA6:
+        cpu.A &= cpu.memory[cpu.HL];
+        cpu.Flag &= ~(FLAG_N | FLAG_C | FLAG_Z);
+        cpu.Flag |= FLAG_H;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("AND A, (HL)", "");
+        break;
+      case 0xA7:
+        cpu.Flag &= ~(FLAG_N | FLAG_C | FLAG_Z);
+        cpu.Flag |= FLAG_H;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("AND A, A", "");
+        break;
+      case 0xA8:
+        cpu.A ^= cpu.B;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_C | FLAG_Z);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("XOR A, B", "");
+        break;
+      case 0xA9:
+        cpu.A ^= cpu.C;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_C | FLAG_Z);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("XOR A, C", "");
+        break;
+      case 0xAA:
+        cpu.A ^= cpu.D;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_C | FLAG_Z);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("XOR A, D", "");
+        break;
+      case 0xAB:
+        cpu.A ^= cpu.E;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_C | FLAG_Z);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("XOR A, E", "");
+        break;
+      case 0xAC:
+        cpu.A ^= cpu.H;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_C | FLAG_Z);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("XOR A, H", "");
+        break;
+      case 0xAD:
+        cpu.A ^= cpu.L;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_C | FLAG_Z);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("XOR A, L", "");
+        break;
+      case 0xAE:
+        cpu.A ^= cpu.memory[cpu.HL];
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_C | FLAG_Z);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("XOR A, (HL)", "");
+        break;
+      case 0xAF:
+        cpu.A = 0;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_C);
+        cpu.Flag |= FLAG_Z;
+        printDebug("XOR A, A", "");
+        break;
+      case 0xB0:
+        cpu.A |= cpu.B;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_C | FLAG_Z);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("OR A, B", "");
+        break;
+      case 0xB1:
+        cpu.A |= cpu.C;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_C | FLAG_Z);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("OR A, C", "");
+        break;
+      case 0xB2:
+        cpu.A |= cpu.D;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_C | FLAG_Z);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("OR A, C", "");
+        break;
+      case 0xB3:
+        cpu.A |= cpu.E;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_C | FLAG_Z);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("OR A, D", "");
+        break;
+      case 0xB4:
+        cpu.A |= cpu.H;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_C | FLAG_Z);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("OR A, H", "");
+        break;
+      case 0xB5:
+        cpu.A |= cpu.L;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_C | FLAG_Z);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("OR A, L", "");
+        break;
+      case 0xB6:
+        cpu.A |= cpu.memory[cpu.HL];
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_C | FLAG_Z);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("OR A, (HL)", "");
+        break;
+      case 0xB7:
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_C | FLAG_Z);
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("OR A, A", "");
+        break;
+      case 0xB8: {
+        uint8_t a = cpu.A;
+        uint8_t b = cpu.B;
+        uint16_t result = a - b;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if ((a & 0x0F) < (b & 0x0F))
+          cpu.Flag |= FLAG_H;
+
+        if (a < b)
+          cpu.Flag |= FLAG_C;
+
+        if ((result & 0xFF) == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("CP A, B", "");
+        break;
+      }
+      case 0xB9: {
+        uint8_t a = cpu.A;
+        uint8_t c = cpu.C;
+        uint16_t result = a - c;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if ((a & 0x0F) < (c & 0x0F))
+          cpu.Flag |= FLAG_H;
+
+        if (a < c)
+          cpu.Flag |= FLAG_C;
+
+        if ((result & 0xFF) == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("CP A, C", "");
+        break;
+      }
+      case 0xBA: {
+        uint8_t a = cpu.A;
+        uint8_t d = cpu.D;
+        uint16_t result = a - d;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if ((a & 0x0F) < (d & 0x0F))
+          cpu.Flag |= FLAG_H;
+
+        if (a < d)
+          cpu.Flag |= FLAG_C;
+
+        if ((result & 0xFF) == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("CP A, D", "");
+        break;
+      }
+      case 0xBB: {
+        uint8_t a = cpu.A;
+        uint8_t e = cpu.E;
+        uint16_t result = a - e;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if ((a & 0x0F) < (e & 0x0F))
+          cpu.Flag |= FLAG_H;
+
+        if (a < e)
+          cpu.Flag |= FLAG_C;
+
+        if ((result & 0xFF) == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("CP A, E", "");
+        break;
+      }
+      case 0xBC: {
+        uint8_t a = cpu.A;
+        uint8_t h = cpu.H;
+        uint16_t result = a - h;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if ((a & 0x0F) < (h & 0x0F))
+          cpu.Flag |= FLAG_H;
+
+        if (a < h)
+          cpu.Flag |= FLAG_C;
+
+        if ((result & 0xFF) == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("CP A, H", "");
+        break;
+      }
+      case 0xBD: {
+        uint8_t a = cpu.A;
+        uint8_t l = cpu.L;
+        uint16_t result = a - l;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if ((a & 0x0F) < (l & 0x0F))
+          cpu.Flag |= FLAG_H;
+
+        if (a < l)
+          cpu.Flag |= FLAG_C;
+
+        if ((result & 0xFF) == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("CP A, L", "");
+        break;
+      }
+      case 0xBE: {
+        uint8_t a = cpu.A;
+        uint8_t value = cpu.memory[cpu.HL];
+        uint16_t result = a - value;
+        cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
+        cpu.Flag |= FLAG_N;
+        if ((a & 0x0F) < (value & 0x0F))
+          cpu.Flag |= FLAG_H;
+
+        if (a < value)
+          cpu.Flag |= FLAG_C;
+
+        if ((result & 0xFF) == 0)
+          cpu.Flag |= FLAG_Z;
+        printDebug("CP A, (HL)", "");
+        break;
+      }
+      case 0xBF: {
+        cpu.Flag &= ~(FLAG_H | FLAG_C);
+        cpu.Flag |= (FLAG_N | FLAG_Z);
+        printDebug("CP A, A", "");
+        break;
+      }
       default:
         printError("OpCode not found!", "");
         break;
