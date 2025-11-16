@@ -2459,14 +2459,15 @@ void Run(CPU cpu, bool debug, long size)
         printError("OpCode not found!", "");
         break;
     }
-    if (!(jumped))
-      cpu.PC++;
-    if (cpu.EI_pending) {
-      prePC = cpu.PC;
-      if (prePC != cpu.PC) {
-        cpu.IME = true;
-        cpu.EI_pending = false;
+    if (!(jumped)) {
+      if (cpu.EI_pending) {
+        prePC = cpu.PC;
+        if (prePC != cpu.PC) {
+          cpu.IME = true;
+          cpu.EI_pending = false;
+        }
       }
+      cpu.PC++;
     }
     jumped = false;
     opcode = cpu.rom[cpu.PC];
