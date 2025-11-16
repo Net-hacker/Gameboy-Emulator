@@ -12,11 +12,10 @@
  *
  * Zum Debuggen des Programs da. Register können gedumpt werden genauso wie Speicher, PC, SP und die .gb Datei.
  *
- * @param rom Der Inhalt der .gb Datei als unsigned char*.
  * @param cpu Die CPU und ihre Register, Program Counter, Stack Pointer und Flaggen.
  * @param size Die Größe der .gb Datei.
  */
-void Debugging(unsigned char* rom, CPU cpu, long size)
+void Debugging(CPU cpu, long size)
 {
   char input[5];
   char* converter = (char*) malloc(sizeof(char));
@@ -70,7 +69,7 @@ void Debugging(unsigned char* rom, CPU cpu, long size)
       printDebug("Groesse: ", "%d", size);
       fprintf(rom_d, "  ");
       for (size_t i = 0; i < size; i++) {
-        fprintf(rom_d, "%02x ", rom[i]);
+        fprintf(rom_d, "%02x ", cpu.rom[i]);
         if ((i + 1) % 16 == 0)
           fprintf(rom_d, "  %06X\n", i);
         if ((i + 1) % 8 == 0)
@@ -91,28 +90,61 @@ void Debugging(unsigned char* rom, CPU cpu, long size)
 }
 
 /**
+ * Gibt den uint8_t Wert vom ROM oder RAM zurück.
+ *
+ * Hier wird ein Wert aus entweder dem RAM oder der ROM an einer Addresse ausgelesen.
+ *
+ * @param cpu Die CPU und ihre Register, Program Counter, Stack Pointer und Flaggen.
+ * @param addr Die Addresse, des Wertes.
+ */
+uint8_t cpu_read8(CPU cpu, uint16_t addr)
+{
+  if (addr < 0x8000)
+    return cpu.rom[addr];
+  else
+    return cpu.memory[addr];
+}
+
+/**
+ * Schreib einen uint8_t Wert in den RAM.
+ *
+ * Hier wird ein Wert in den RAM an einer bestimmten Addresse gespeichert.
+ *
+ * @param cpu Die CPU und ihre Register, Program Counter, Stack Pointer und Flaggen.
+ * @param addr Die Addresse, des Wertes.
+ * @param val Der Wert.
+ */
+void cpu_write8(CPU cpu, uint16_t addr, uint8_t val)
+{
+  if (addr >= 0x8000)
+    cpu.memory[addr] = val;
+}
+
+/**
  * Der Interpreter von OpCodes.
  *
  * Hier werden die eingelesen OpCodes interpretiert und ausgeführt.
  *
- * @param rom Der Inhalt der .gb Datei als unsigned char*.
  * @param cpu Die CPU und ihre Register, Program Counter, Stack Pointer und Flaggen.
  * @param debug Wenn true, springt am Ende des Programms zum DebugMenu.
  * @param size Die Größe der .gb Datei.
  */
-void Run(unsigned char* rom, CPU cpu, bool debug, long size)
+void Run(CPU cpu, bool debug, long size)
 {
-  uint8_t opcode = rom[cpu.PC];
+  uint8_t opcode = cpu.rom[cpu.PC];
   bool halted = false;
+  bool jumped = false;
+  uint8_t count = 0;
+  uint8_t prePC;
 
-  while (!WindowShouldClose() && cpu.PC <= 50 && !halted) {
-    printf("%02X\n", rom[cpu.PC]);
+  while (!WindowShouldClose() && count <= 100 && !halted) {
+    printf("%02X\n", cpu.rom[cpu.PC]);
     switch (opcode) {
       case 0x00:
         printDebug("NOP", "");
         break;
       case 0x01: {
-        cpu.BC = cpu.memory[cpu.PC + 1] << 8 | cpu.memory[cpu.PC + 2];
+        cpu.BC = cpu_read8(cpu, cpu.PC + 1) << 8 | cpu_read8(cpu, cpu.PC + 2);
         cpu.B = (cpu.BC >> 8) & 0xFF;
         cpu.C = cpu.BC & 0xFF;
         cpu.PC += 2;
@@ -120,8 +152,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         break;
       }
       case 0x02: {
-        uint16_t address = cpu.BC;
-        cpu.memory[address] = cpu.A;
+        cpu_write8(cpu, cpu.BC, cpu.A);
         printDebug("LD (BC), A", "");
         break;
       }
@@ -167,7 +198,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         break;
       }
       case 0x06:
-        cpu.B = cpu.memory[cpu.PC++];
+        cpu.B = cpu_read8(cpu, cpu.PC++);
         cpu.BC = (cpu.B << 8) | cpu.C;
         printDebug("LD B, u8", "");
         break;
@@ -183,9 +214,9 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         break;
       }
       case 0x08: {
-        uint16_t address = cpu.memory[cpu.PC + 1] | cpu.memory[cpu.PC + 2];
-        cpu.memory[address] = cpu.SP & 0xFF;
-        cpu.memory[address + 1] = (cpu.SP >> 8) & 0xFF;
+        uint16_t address = cpu_read8(cpu, cpu.PC + 1) | cpu_read8(cpu, cpu.PC + 2);
+        cpu_write8(cpu, address, cpu.SP & 0xFF);
+        cpu_write8(cpu, address + 1, (cpu.SP >> 8) & 0xFF);
         cpu.PC += 2;
         printDebug("LD (u16), SP", "");
         break;
@@ -210,8 +241,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         break;
       }
       case 0x0A: {
-        uint16_t address = cpu.BC;
-        cpu.A = cpu.memory[address];
+        cpu.A = cpu_read8(cpu, cpu.BC);
         printDebug("LD A, (BC)", "");
         break;
       }
@@ -259,7 +289,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         break;
       }
       case 0x0E:
-        cpu.C = cpu.memory[cpu.PC++];
+        cpu.C = cpu_read8(cpu, cpu.PC++);
         cpu.BC = (cpu.B << 8) | cpu.C;
         printDebug("LD C, u8", "");
         break;
@@ -279,7 +309,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         printDebug("STOP", "");
         break;
       case 0x11: {
-        cpu.DE = (cpu.memory[cpu.PC + 2] << 8) | cpu.memory[cpu.PC + 1];
+        cpu.DE = (cpu_read8(cpu, cpu.PC + 2) << 8) | cpu_read8(cpu, cpu.PC + 1);
         cpu.D = (cpu.DE >> 8) & 0xFF;
         cpu.E = cpu.DE & 0xFF;
         cpu.PC += 2;
@@ -287,8 +317,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         break;
       }
       case 0x12: {
-        uint16_t address = cpu.DE;
-        cpu.memory[address] = cpu.A;
+        cpu_write8(cpu, cpu.DE, cpu.A);
         printDebug("LD (DE), A", "");
         break;
       }
@@ -336,7 +365,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         break;
       }
       case 0x16:
-        cpu.D = cpu.memory[cpu.PC++];
+        cpu.D = cpu_read8(cpu, cpu.PC++);
         cpu.DE = (cpu.D << 8) | cpu.E;
         printDebug("LD D, u8", "");
         break;
@@ -351,7 +380,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         break;
       }
       case 0x18: {
-        int8_t offset = cpu.memory[cpu.PC++];
+        int8_t offset = cpu_read8(cpu, cpu.PC++);
         cpu.PC += offset;
         printDebug("JR i8", "");
         break;
@@ -376,8 +405,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         break;
       }
       case 0x1A: {
-        uint16_t address = cpu.DE;
-        cpu.A = cpu.memory[address];
+        cpu.A = cpu_read8(cpu, cpu.DE);
         printDebug("LD A, (DE)", "");
         break;
       }
@@ -425,7 +453,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         break;
       }
       case 0x1E:
-        cpu.E = cpu.memory[cpu.PC++];
+        cpu.E = cpu_read8(cpu, cpu.PC++);
         cpu.DE = (cpu.D << 8) | cpu.E;
         printDebug("LD E, u8", "");
         break;
@@ -442,21 +470,21 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         break;
       }
       case 0x20: {
-        int8_t offset = cpu.memory[cpu.PC++];
+        int8_t offset = cpu_read8(cpu, cpu.PC++);
         if (!(cpu.Flag & FLAG_Z))
           cpu.PC += offset;
         printDebug("JR NZ, i8", "");
         break;
       }
       case 0x21:
-        cpu.HL = (cpu.memory[cpu.PC + 2] << 8) | cpu.memory[cpu.PC + 1];
+        cpu.HL = (cpu_read8(cpu, cpu.PC + 2) << 8) | cpu_read8(cpu, cpu.PC + 1);
         cpu.H = (cpu.HL >> 8) & 0xFF;
         cpu.L = cpu.HL & 0xFF;
         cpu.PC += 2;
         printDebug("LD HL, u16", "");
         break;
       case 0x22:
-        cpu.memory[cpu.HL] = cpu.A;
+        cpu_write8(cpu, cpu.HL, cpu.A);
         cpu.HL++;
         cpu.H = (cpu.HL >> 8) & 0xFF;
         cpu.L = cpu.HL & 0xFF;
@@ -503,7 +531,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         break;
       }
       case 0x26:
-        cpu.H = cpu.memory[cpu.PC++];
+        cpu.H = cpu_read8(cpu, cpu.PC++);
         cpu.HL = (cpu.H << 8) | cpu.L;
         printDebug("LD H, u8", "");
         break;
@@ -533,7 +561,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         break;
       }
       case 0x28: {
-        int8_t offset = cpu.memory[cpu.PC++];
+        int8_t offset = cpu_read8(cpu, cpu.PC++);
         if (cpu.Flag & FLAG_Z)
           cpu.PC += offset;
         printDebug("JR Z, i8", "");
@@ -558,7 +586,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         break;
       }
       case 0x2A:
-        cpu.A = cpu.memory[cpu.HL];
+        cpu.A = cpu_read8(cpu, cpu.HL);
         cpu.HL++;
         cpu.H = (cpu.HL >> 8) & 0xFF;
         cpu.L = cpu.HL & 0xFF;
@@ -605,7 +633,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         break;
       }
       case 0x2E:
-        cpu.L = cpu.memory[cpu.PC++];
+        cpu.L = cpu_read8(cpu, cpu.PC++);
         cpu.HL = (cpu.H << 8) | cpu.L;
         printDebug("LD L, u8", "");
         break;
@@ -616,19 +644,19 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         printDebug("CPL", "");
         break;
       case 0x30: {
-        int8_t offset = cpu.memory[cpu.PC++];
+        int8_t offset = cpu_read8(cpu, cpu.PC++);
         if (!(cpu.Flag & FLAG_C))
           cpu.PC += offset;
         printDebug("JR NC, i8", "");
         break;
       }
       case 0x31:
-        cpu.SP = (cpu.memory[cpu.PC + 2] << 8) | cpu.memory[cpu.PC + 1];
+        cpu.SP = (cpu_read8(cpu, cpu.PC + 2) << 8) | cpu_read8(cpu, cpu.PC + 1);
         cpu.PC += 2;
         printDebug("LD SP, u16", "");
         break;
       case 0x32:
-        cpu.memory[cpu.HL] = cpu.A;
+        cpu_write8(cpu, cpu.HL, cpu.A);
         cpu.HL--;
         cpu.H = (cpu.HL >> 8) & 0xFF;
         cpu.L = cpu.HL & 0xFF;
@@ -639,7 +667,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         printDebug("INC SP", "");
         break;
       case 0x34: {
-        uint8_t value = cpu.memory[cpu.HL];
+        uint8_t value = cpu_read8(cpu, cpu.HL);
         uint8_t pre = value;
         value++;
         cpu.Flag &= ~FLAG_N;
@@ -652,12 +680,12 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
           cpu.Flag |= FLAG_H;
         else
           cpu.Flag &= ~FLAG_H;
-        cpu.memory[cpu.HL] = value;
+        cpu_write8(cpu, cpu.HL, value);
         printDebug("INC (HL)", "");
         break;
       }
       case 0x35: {
-        uint8_t value = cpu.memory[cpu.HL];
+        uint8_t value = cpu_read8(cpu, cpu.HL);
         uint8_t pre = value;
         value--;
         cpu.Flag |= FLAG_N;
@@ -670,13 +698,13 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
           cpu.Flag |= FLAG_H;
         else
           cpu.Flag &= ~FLAG_H;
-        cpu.memory[cpu.HL] = value;
+        cpu_write8(cpu, cpu.HL, value);
         printDebug("DEC (HL)", "");
         break;
       }
       case 0x36: {
-        uint8_t value = cpu.memory[cpu.PC++];
-        cpu.memory[cpu.HL] = value;
+        uint8_t value = cpu_read8(cpu, cpu.PC++);
+        cpu_write8(cpu, cpu.HL, value);
         printDebug("LD (HL), u8", "");
         break;
       }
@@ -686,7 +714,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         printDebug("SCF", "");
         break;
       case 0x38: {
-        int8_t offset = cpu.memory[cpu.PC++];
+        int8_t offset = cpu_read8(cpu, cpu.PC++);
         if (cpu.Flag & FLAG_C)
           cpu.PC += offset;
         printDebug("JR C, i8", "");
@@ -711,7 +739,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         break;
       }
       case 0x3A:
-        cpu.A = cpu.memory[cpu.HL];
+        cpu.A = cpu_read8(cpu, cpu.HL);
         cpu.HL--;
         cpu.H = (cpu.HL >> 8) & 0xFF;
         cpu.L = cpu.HL & 0xFF;
@@ -754,7 +782,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         break;
       }
       case 0x3E:
-        cpu.A = cpu.memory[cpu.PC++];
+        cpu.A = cpu_read8(cpu, cpu.PC++);
         printDebug("LD A, u8", "");
         break;
       case 0x3F:
@@ -789,7 +817,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         printDebug("LD B, L", "");
         break;
       case 0x46:
-        cpu.B = cpu.memory[cpu.HL];
+        cpu.B = cpu_read8(cpu, cpu.HL);
         printDebug("LD B, (HL)", "");
         break;
       case 0x47:
@@ -820,7 +848,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         printDebug("LD C, L", "");
         break;
       case 0x4E:
-        cpu.C = cpu.memory[cpu.HL];
+        cpu.C = cpu_read8(cpu, cpu.HL);
         printDebug("LD C, (HL)", "");
         break;
       case 0x4F:
@@ -851,7 +879,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         printDebug("LD D, L", "");
         break;
       case 0x56:
-        cpu.D = cpu.memory[cpu.HL];
+        cpu.D = cpu_read8(cpu, cpu.HL);
         printDebug("LD D, (HL)", "");
         break;
       case 0x57:
@@ -882,7 +910,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         printDebug("LD E, L", "");
         break;
       case 0x5E:
-        cpu.E = cpu.memory[cpu.HL];
+        cpu.E = cpu_read8(cpu, cpu.HL);
         printDebug("LD E, (HL)", "");
         break;
       case 0x5F:
@@ -913,7 +941,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         printDebug("LD H, L", "");
         break;
       case 0x66:
-        cpu.H = cpu.memory[cpu.HL];
+        cpu.H = cpu_read8(cpu, cpu.HL);
         printDebug("LD H, (HL)", "");
         break;
       case 0x67:
@@ -944,7 +972,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         printDebug("LD L, L", "");
         break;
       case 0x6E:
-        cpu.L = cpu.memory[cpu.HL];
+        cpu.L = cpu_read8(cpu, cpu.HL);
         printDebug("LD L, (HL)", "");
         break;
       case 0x6F:
@@ -952,27 +980,27 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         printDebug("LD L, A", "");
         break;
       case 0x70:
-        cpu.memory[cpu.HL] = cpu.B;
+        cpu_write8(cpu, cpu.HL, cpu.B);
         printDebug("LD (HL), B", "");
         break;
       case 0x71:
-        cpu.memory[cpu.HL] = cpu.C;
+        cpu_write8(cpu, cpu.HL, cpu.C);
         printDebug("LD (HL), C", "");
         break;
       case 0x72:
-        cpu.memory[cpu.HL] = cpu.D;
+        cpu_write8(cpu, cpu.HL, cpu.D);
         printDebug("LD (HL), D", "");
         break;
       case 0x73:
-        cpu.memory[cpu.HL] = cpu.E;
+        cpu_write8(cpu, cpu.HL, cpu.E);
         printDebug("LD (HL), E", "");
         break;
       case 0x74:
-        cpu.memory[cpu.HL] = cpu.H;
+        cpu_write8(cpu, cpu.HL, cpu.H);
         printDebug("LD (HL), H", "");
         break;
       case 0x75:
-        cpu.memory[cpu.HL] = cpu.L;
+        cpu_write8(cpu, cpu.HL, cpu.L);
         printDebug("LD (HL), L", "");
         break;
       case 0x76:
@@ -980,7 +1008,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         printDebug("HALT", "");
         break;
       case 0x77:
-        cpu.memory[cpu.HL] = cpu.A;
+        cpu_write8(cpu, cpu.HL, cpu.A);
         printDebug("LD (HL), A", "");
         break;
       case 0x78:
@@ -1008,7 +1036,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         printDebug("LD A, L", "");
         break;
       case 0x7E:
-        cpu.A = cpu.memory[cpu.HL];
+        cpu.A = cpu_read8(cpu, cpu.HL);
         printDebug("LD A, (HL)", "");
         break;
       case 0x7F:
@@ -1118,7 +1146,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
       }
       case 0x86: {
         uint8_t a = cpu.A;
-        uint8_t value = cpu.memory[cpu.HL];
+        uint8_t value = cpu_read8(cpu, cpu.HL);
         uint16_t result = a + value;
         cpu.A = result & 0xFF;
         cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_Z | FLAG_C);
@@ -1259,7 +1287,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
       }
       case 0x8E: {
         uint8_t a = cpu.A;
-        uint8_t value = cpu.memory[cpu.HL];
+        uint8_t value = cpu_read8(cpu, cpu.HL);
         uint8_t carry = (cpu.Flag & FLAG_C) ? 1 : 0;
         uint16_t result = a + value + carry;
         cpu.A = result & 0xFF;
@@ -1402,7 +1430,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
       }
       case 0x96: {
         uint8_t a = cpu.A;
-        uint8_t value = cpu.memory[cpu.HL];
+        uint8_t value = cpu_read8(cpu, cpu.HL);
         uint16_t result = a - value;
         cpu.A = result & 0xFF;
         cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
@@ -1540,7 +1568,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
       }
       case 0x9E: {
         uint8_t a = cpu.A;
-        uint8_t value = cpu.memory[cpu.HL];
+        uint8_t value = cpu_read8(cpu, cpu.HL);
         uint8_t carry = (cpu.Flag & FLAG_C) ? 1 : 0;
         uint16_t result = a - value - carry;
         cpu.A = result & 0xFF;
@@ -1624,7 +1652,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         printDebug("AND A, L", "");
         break;
       case 0xA6:
-        cpu.A &= cpu.memory[cpu.HL];
+        cpu.A &= cpu_read8(cpu, cpu.HL);
         cpu.Flag &= ~(FLAG_N | FLAG_C | FLAG_Z);
         cpu.Flag |= FLAG_H;
         if (cpu.A == 0)
@@ -1681,7 +1709,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         printDebug("XOR A, L", "");
         break;
       case 0xAE:
-        cpu.A ^= cpu.memory[cpu.HL];
+        cpu.A ^= cpu_read8(cpu, cpu.HL);
         cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_C | FLAG_Z);
         if (cpu.A == 0)
           cpu.Flag |= FLAG_Z;
@@ -1736,7 +1764,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         printDebug("OR A, L", "");
         break;
       case 0xB6:
-        cpu.A |= cpu.memory[cpu.HL];
+        cpu.A |= cpu_read8(cpu, cpu.HL);
         cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_C | FLAG_Z);
         if (cpu.A == 0)
           cpu.Flag |= FLAG_Z;
@@ -1852,7 +1880,7 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
       }
       case 0xBE: {
         uint8_t a = cpu.A;
-        uint8_t value = cpu.memory[cpu.HL];
+        uint8_t value = cpu_read8(cpu, cpu.HL);
         uint16_t result = a - value;
         cpu.Flag &= ~(FLAG_H | FLAG_Z | FLAG_C);
         cpu.Flag |= FLAG_N;
@@ -1873,15 +1901,579 @@ void Run(unsigned char* rom, CPU cpu, bool debug, long size)
         printDebug("CP A, A", "");
         break;
       }
+      case 0xC0: {
+        if (!(cpu.Flag & FLAG_Z)) {
+          uint8_t lo = cpu_read8(cpu, cpu.SP++);
+          uint8_t hi = cpu_read8(cpu, cpu.SP++);
+          cpu.PC = (hi << 8) | lo;
+          jumped = true;
+        }
+        printDebug("RET NZ", "");
+        break;
+      }
+      case 0xC1: {
+        cpu.B = cpu_read8(cpu, cpu.SP++);
+        cpu.C = cpu_read8(cpu, cpu.SP++);
+        cpu.BC = (cpu.B << 8) | cpu.C;
+        printDebug("POP BC", "");
+        break;
+      }
+      case 0xC2: {
+        uint8_t lo = cpu_read8(cpu, cpu.PC++);
+        uint8_t hi = cpu_read8(cpu, cpu.PC++);
+        uint16_t addr = (hi << 8) | lo;
+        if (!(cpu.Flag & FLAG_Z)) {
+            cpu.PC = addr;
+            jumped = true;
+        }
+        printDebug("JP NZ, u16", "");
+        break;
+      }
+      case 0xC3: {
+        uint8_t lo = cpu_read8(cpu, cpu.PC + 1);
+        uint8_t hi = cpu_read8(cpu, cpu.PC + 2);
+        uint16_t addr = (hi << 8) | lo;
+        cpu.PC = addr;
+        jumped = true;
+        printDebug("JP u16", "");
+        break;
+      }
+      case 0xC4: {
+        uint8_t lo = cpu_read8(cpu, cpu.PC++);
+        uint8_t hi = cpu_read8(cpu, cpu.PC++);
+        uint16_t addr = (hi << 8) | lo;
+        if (!(cpu.Flag & FLAG_Z)) {
+          uint16_t return_addr = cpu.PC++;
+          cpu_write8(cpu, --cpu.SP, (return_addr >> 8) & 0xFF);
+          cpu_write8(cpu, --cpu.SP,return_addr & 0xFF);
+          cpu.PC = addr;
+          jumped = true;
+        }
+        printDebug("CALL NZ, u16", "");
+        break;
+      }
+      case 0xC5: {
+        uint16_t value = cpu.BC;
+        cpu_write8(cpu, --cpu.SP, (value >> 8) & 0xFF);
+        cpu_write8(cpu, --cpu.SP, value & 0xFF);
+      }
+      case 0xC6: {
+        uint8_t val = cpu_read8(cpu, cpu.PC++);
+        uint16_t result = cpu.A + val;
+        if ((result & 0xFF) == 0)
+          cpu.Flag |= FLAG_Z;
+        else
+          cpu.Flag &= ~FLAG_Z;
+
+        cpu.Flag &= ~FLAG_N;
+
+        if ((cpu.A & 0x0F) + (val & 0x0F) > 0x0F)
+          cpu.Flag |= FLAG_H;
+        else
+          cpu.Flag &= ~FLAG_H;
+
+        if (result > 0xFF)
+          cpu.Flag |= FLAG_C;
+        else
+          cpu.Flag &= ~FLAG_C;
+        cpu.A = (uint8_t) result;
+        printDebug("ADD A, u8", "");
+        break;
+      }
+      case 0xC7: {
+        uint16_t return_addr = cpu.PC + 1;
+        cpu_write8(cpu, --cpu.SP, (return_addr >> 8) & 0xFF);
+        cpu_write8(cpu, --cpu.SP, return_addr & 0xFF);
+        cpu.PC = 0x0000;
+        jumped = true;
+        printDebug("RST 00h", "");
+        break;
+      }
+      case 0xC8: {
+        if (cpu.Flag & FLAG_Z) {
+          uint8_t lo = cpu_read8(cpu, cpu.SP++);
+          uint8_t hi = cpu_read8(cpu, cpu.SP++);
+          cpu.PC = (hi << 8) | lo;
+          jumped = true;
+        }
+        printDebug("RET Z", "");
+        break;
+      }
+      case 0xC9: {
+        uint8_t lo = cpu_read8(cpu, cpu.SP++);
+        uint8_t hi = cpu_read8(cpu, cpu.SP++);
+        cpu.PC = (hi << 8) | lo;
+        jumped = true;
+        printDebug("RET", "");
+        break;
+      }
+      case 0xCA: {
+        uint8_t lo = cpu_read8(cpu, cpu.PC++);
+        uint8_t hi = cpu_read8(cpu, cpu.PC++);
+        uint16_t addr = (hi << 8) | lo;
+        if (cpu.Flag & FLAG_Z) {
+          cpu.PC = addr;
+          jumped = true;
+        }
+        printDebug("JP Z, u16", "");
+        break;
+      }
+      case 0xCB: {
+        uint8_t cbcode = cpu_read8(cpu, cpu.PC++);
+        //Executing CB OpCodes
+      }
+      case 0xCC: {
+        uint8_t lo = cpu_read8(cpu, cpu.PC++);
+        uint8_t hi = cpu_read8(cpu, cpu.PC++);
+        uint16_t addr = (hi << 8) | lo;
+        if (cpu.Flag & FLAG_Z) {
+          uint16_t return_addr = cpu.PC++;
+          cpu_write8(cpu, --cpu.SP, (return_addr >> 8) | 0xFF);
+          cpu_write8(cpu, --cpu.SP, return_addr & 0xFF);
+          cpu.PC = addr;
+          jumped = true;
+        }
+        printDebug("CALL Z, u16", "");
+        break;
+      }
+      case 0xCD: {
+        uint8_t lo = cpu_read8(cpu, cpu.PC++);
+        uint8_t hi = cpu_read8(cpu, cpu.PC++);
+        uint16_t addr = (hi << 8) | lo;
+        uint16_t return_addr = cpu.PC++;
+        cpu_write8(cpu, --cpu.SP, (return_addr >> 8) | 0xFF);
+        cpu_write8(cpu, --cpu.SP, return_addr & 0xFF);
+        cpu.PC = addr;
+        jumped = true;
+        printDebug("CALL u16", "");
+        break;
+      }
+      case 0xCE: {
+        uint8_t value = cpu_read8(cpu, cpu.PC++);
+        uint8_t carry = (cpu.Flag & FLAG_C) ? 1 : 0;
+        uint16_t result = cpu.A + value + carry;
+        if ((result & 0xFF) == 0)
+          cpu.Flag |= FLAG_Z;
+        else
+          cpu.Flag &= ~FLAG_Z;
+
+        cpu.Flag &= ~FLAG_N;
+        if (((cpu.A & 0x0F) + (value + 0x0F) + carry) > 0x0F)
+          cpu.Flag |= FLAG_H;
+        else
+          cpu.Flag &= ~FLAG_H;
+
+        if (result > 0xFF)
+          cpu.Flag |= FLAG_C;
+        else
+          cpu.Flag &= ~FLAG_C;
+        cpu.A = (uint8_t) result;
+        printDebug("ADC A, u8", "");
+        break;
+      }
+      case 0xCF: {
+        uint16_t return_addr = cpu.PC++;
+        cpu_write8(cpu, --cpu.SP, (return_addr >> 8) & 0xFF);
+        cpu_write8(cpu, --cpu.SP, return_addr & 0xFF);
+        cpu.PC = 0x0008;
+        jumped = true;
+        printDebug("RST 08h", "");
+        break;
+      }
+      case 0xD0: {
+        if (!(cpu.Flag & FLAG_C)) {
+          uint8_t lo = cpu_read8(cpu, cpu.SP++);
+          uint8_t hi = cpu_read8(cpu, cpu.SP++);
+          cpu.PC = (hi << 8) | lo;
+          jumped = true;
+        }
+        printDebug("RET NC", "");
+        break;
+      }
+      case 0xD1: {
+        cpu.D = cpu_read8(cpu, cpu.SP++);
+        cpu.E = cpu_read8(cpu, cpu.SP++);
+        cpu.DE = (cpu.D << 8) | cpu.E;
+        printDebug("POP DE", "");
+        break;
+      }
+      case 0xD2: {
+        uint8_t lo = cpu_read8(cpu, cpu.PC++);
+        uint8_t hi = cpu_read8(cpu, cpu.PC++);
+        uint16_t addr = (hi << 8) | lo;
+        if (!(cpu.Flag & FLAG_C)) {
+          cpu.PC = addr;
+          jumped = true;
+        }
+        printDebug("JP NC, u16", "");
+        break;
+      }
+      case 0xD4: {
+        uint8_t lo = cpu_read8(cpu, cpu.PC++);
+        uint8_t hi = cpu_read8(cpu, cpu.PC++);
+        uint16_t addr = (hi << 8) | lo;
+        if (!(cpu.Flag & FLAG_C)) {
+          uint16_t return_addr = cpu.PC++;
+          cpu_write8(cpu, --cpu.SP, (return_addr >> 8) & 0xFF);
+          cpu_write8(cpu, --cpu.SP, return_addr & 0xFF);
+          cpu.PC = addr;
+          jumped = true;
+        }
+        printDebug("CALL NC, u16", "");
+        break;
+      }
+      case 0xD5: {
+        uint16_t value = cpu.DE;
+        cpu_write8(cpu, --cpu.SP, (value >> 8) | 0xFF);
+        cpu_write8(cpu, --cpu.SP, value & 0xFF);
+        printDebug("PUSH DE", "");
+        break;
+      }
+      case 0xD6: {
+        uint8_t value = cpu_read8(cpu, cpu.PC++);
+        uint16_t result = cpu.A - value;
+        if ((result & 0xFF) == 0)
+          cpu.Flag |= FLAG_Z;
+        else
+          cpu.Flag &= ~FLAG_Z;
+
+        cpu.Flag |= FLAG_N;
+
+        if ((cpu.A & 0x0F) < (value & 0x0F))
+          cpu.Flag |= FLAG_H;
+        else
+          cpu.Flag &= ~FLAG_H;
+
+        if (cpu.A < 0xFF)
+          cpu.Flag |= FLAG_C;
+        else
+          cpu.Flag &= ~FLAG_C;
+        cpu.A = (uint8_t) result;
+        printDebug("SUB A, u8", "");
+        break;
+      }
+      case 0xD7: {
+        uint16_t return_addr = cpu.PC++;
+        cpu_write8(cpu, --cpu.SP, (return_addr >> 8) & 0xFF);
+        cpu_write8(cpu, --cpu.SP, return_addr & 0xFF);
+        cpu.PC = 0x0010;
+        jumped = true;
+        printDebug("RST 10h", "");
+        break;
+      }
+      case 0xD8: {
+        if (cpu.Flag & FLAG_C) {
+          uint8_t lo = cpu_read8(cpu, cpu.SP++);
+          uint8_t hi = cpu_read8(cpu, cpu.SP++);
+          cpu.PC = (hi << 8) | lo;
+          jumped = true;
+        }
+        printDebug("RET C", "");
+        break;
+      }
+      case 0xD9: {
+        uint8_t lo = cpu_read8(cpu, cpu.SP++);
+        uint8_t hi = cpu_read8(cpu, cpu.SP++);
+        cpu.PC = (hi << 8) | lo;
+        jumped = true;
+        cpu.IME = true;
+        printDebug("RETI", "");
+        break;
+      }
+      case 0xDA: {
+        uint8_t lo = cpu_read8(cpu, cpu.PC++);
+        uint8_t hi = cpu_read8(cpu, cpu.PC++);
+        uint16_t addr = (hi << 8) | lo;
+        if (cpu.Flag & FLAG_C) {
+          cpu.PC = addr;
+          jumped = true;
+        }
+        printDebug("JP C, u16", "");
+        break;
+      }
+      case 0xDC: {
+        uint8_t lo = cpu_read8(cpu, cpu.PC++);
+        uint8_t hi = cpu_read8(cpu, cpu.PC++);
+        uint16_t addr = (hi << 8) | lo;
+        if (cpu.Flag & FLAG_C) {
+          uint16_t return_addr = cpu.PC++;
+          cpu_write8(cpu, --cpu.SP, (return_addr >> 8) & 0xFF);
+          cpu_write8(cpu, --cpu.SP, return_addr & 0xFF);
+          cpu.PC = addr;
+          jumped = true;
+        }
+        printDebug("CALL C, u16", "");
+        break;
+      }
+      case 0xDE: {
+        uint8_t value = cpu_read8(cpu, cpu.PC++);
+        uint8_t carry = (cpu.Flag & FLAG_C) ? 1 : 0;
+        uint16_t result = cpu.A - value - carry;
+        if ((result & 0xFF) == 0)
+          cpu.Flag |= FLAG_Z;
+        else
+          cpu.Flag &= ~FLAG_Z;
+
+        cpu.Flag |= FLAG_N;
+        if ((cpu.A & 0x0F) < ((value & 0x0F) + carry))
+          cpu.Flag |= FLAG_H;
+        else
+          cpu.Flag &= ~FLAG_H;
+
+        if (result > 0xFF)
+          cpu.Flag &= ~FLAG_C;
+        if (cpu.A < value + carry)
+          cpu.Flag |= FLAG_C;
+        else
+          cpu.Flag &= ~FLAG_C;
+        cpu.A = (uint8_t) result;
+        printDebug("SBC A, u8", "");
+        break;
+      }
+      case 0xDF: {
+        uint16_t return_addr = cpu.PC++;
+        cpu_write8(cpu, --cpu.SP, (return_addr >> 8) & 0xFF);
+        cpu_write8(cpu, --cpu.SP, return_addr & 0xFF);
+        cpu.PC = 0x0018;
+        jumped = true;
+        printDebug("RST 18h", "");
+        break;
+      }
+      case 0xE0: {
+        uint8_t offset = cpu_read8(cpu, cpu.PC++);
+        uint16_t addr = 0xFF00 + offset;
+        cpu_write8(cpu, addr, cpu.A);
+        printDebug("LD (FF00+u8), A", "");
+        break;
+      }
+      case 0xE1: {
+        cpu.H = cpu_read8(cpu, cpu.SP++);
+        cpu.L = cpu_read8(cpu, cpu.SP++);
+        cpu.HL = (cpu.H << 8) | cpu.L;
+        printDebug("POP HL", "");
+        break;
+      }
+      case 0xE2: {
+        uint16_t addr = 0xFF00 + cpu.C;
+        cpu_write8(cpu, addr, cpu.A);
+        printDebug("LD (FF00+C), A", "");
+        break;
+      }
+      case 0xE5: {
+        cpu_write8(cpu, --cpu.SP, cpu.H);
+        cpu_write8(cpu, --cpu.SP, cpu.L);
+        printDebug("PUSH HL", "");
+        break;
+      }
+      case 0xE6: {
+        uint8_t value = cpu_read8(cpu, cpu.PC++);
+        cpu.A &= value;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        else
+          cpu.Flag &= ~FLAG_Z;
+
+        cpu.Flag &= ~FLAG_N;
+        cpu.Flag |= FLAG_H;
+        cpu.Flag &= ~FLAG_C;
+        printDebug("AND A, u8", "");
+        break;
+      }
+      case 0xE7: {
+        uint16_t return_addr = cpu.PC++;
+        cpu_write8(cpu, --cpu.SP, (return_addr >> 8) & 0xFF);
+        cpu_write8(cpu, --cpu.SP, return_addr & 0xFF);
+        cpu.PC = 0x0020;
+        jumped = true;
+        printDebug("RST 20h", "");
+        break;
+      }
+      case 0xE8: {
+        int8_t imm = (int8_t) cpu_read8(cpu, cpu.PC++);
+        uint16_t sp = cpu.SP;
+        cpu.Flag &= ~(FLAG_Z | FLAG_N);
+        if (((sp & 0x0F) + (imm & 0x0F)) > 0x0F)
+          cpu.Flag |= FLAG_H;
+        else
+          cpu.Flag &= ~FLAG_H;
+
+        if (((sp & 0xFF) + (imm & 0xFF)) > 0xFF)
+          cpu.Flag |= FLAG_C;
+        else
+          cpu.Flag &= ~FLAG_C;
+        cpu.SP = sp + imm;
+        printDebug("ADD SP, i8", "");
+        break;
+      }
+      case 0xE9: {
+        cpu.PC = cpu.HL;
+        jumped = true;
+        printDebug("JP HL", "");
+        break;
+      }
+      case 0xEA: {
+        uint8_t lo = cpu_read8(cpu, cpu.PC++);
+        uint8_t hi = cpu_read8(cpu, cpu.PC++);
+        uint16_t addr = (hi << 8) | lo;
+        cpu_write8(cpu, addr, cpu.A);
+        printDebug("LD (u16), A", "");
+        break;
+      }
+      case 0xEE: {
+        uint8_t value = cpu_read8(cpu, cpu.PC++);
+        cpu.A ^= value;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        else
+          cpu.Flag &= ~FLAG_Z;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_C);
+        printDebug("XOR A, u8", "");
+        break;
+      }
+      case 0xEF: {
+        uint16_t return_addr = cpu.PC++;
+        cpu_write8(cpu, --cpu.SP, (return_addr >> 8) & 0xFF);
+        cpu_write8(cpu, --cpu.SP, return_addr & 0xFF);
+        cpu.PC = 0x0028;
+        jumped = true;
+        printDebug("RST 28h", "");
+        break;
+      }
+      case 0xF0: {
+        uint8_t offset = cpu_read8(cpu, cpu.PC++);
+        uint16_t addr = 0xFF00 + offset;
+        cpu.A = cpu_read8(cpu, addr);
+        printDebug("LD A, (FF00+u8)", "");
+        break;
+      }
+      case 0xF1: {
+        cpu.A = cpu_read8(cpu, cpu.SP++);
+        cpu.Flag = cpu_read8(cpu, cpu.SP++) & 0xF0;
+        printDebug("POP AF", "");
+        break;
+      }
+      case 0xF2: {
+        uint16_t addr = 0xFF00 + cpu.C;
+        cpu.A = cpu_read8(cpu, addr);
+        printDebug("LD A, (FF00+C)", "");
+        break;
+      }
+      case 0xF3: {
+        cpu.IME = false;
+        printDebug("DI", "");
+        break;
+      }
+      case 0xF5: {
+        cpu_write8(cpu, --cpu.SP, cpu.A);
+        cpu_write8(cpu, --cpu.SP, cpu.Flag & 0xF0);
+        printDebug("POP AF", "");
+        break;
+      }
+      case 0xF6: {
+        uint8_t value = cpu_read8(cpu, cpu.PC++);
+        cpu.A |= value;
+        if (cpu.A == 0)
+          cpu.Flag |= FLAG_Z;
+        else
+          cpu.Flag &= ~FLAG_Z;
+        cpu.Flag &= ~(FLAG_N | FLAG_H | FLAG_C);
+        printDebug("OR A, u8", "");
+        break;
+      }
+      case 0xF7: {
+        uint16_t return_addr = cpu.PC++;
+        cpu_write8(cpu, --cpu.SP, (return_addr >> 8) & 0xFF);
+        cpu_write8(cpu, --cpu.SP, return_addr & 0xFF);
+        cpu.PC = 0x0030;
+        jumped = true;
+        printDebug("RST 30h", "");
+        break;
+      }
+      case 0xF8: {
+        int8_t imm = (int8_t) cpu_read8(cpu, cpu.PC++);
+        uint16_t sp = cpu.SP;
+        uint16_t result = sp + imm;
+        cpu.Flag &= ~FLAG_Z;
+        cpu.Flag &= ~FLAG_N;
+        if (((sp & 0x0F) + (imm & 0x0F)) > 0x0F)
+          cpu.Flag |= FLAG_H;
+        else
+          cpu.Flag &= ~FLAG_H;
+
+        if (((sp & 0xFF) + (imm & 0xFF)) > 0xFF)
+          cpu.Flag |= FLAG_C;
+        else
+          cpu.Flag &= ~FLAG_C;
+        cpu.HL = result;
+        printDebug("LD HL, SP+i8", "");
+        break;
+      }
+      case 0xF9: {
+        cpu.SP = cpu.HL;
+        printDebug("LD SP, HL", "");
+        break;
+      }
+      case 0xFA: {
+        uint8_t lo = cpu_read8(cpu, cpu.PC++);
+        uint8_t hi = cpu_read8(cpu, cpu.PC++);
+        uint16_t addr = (hi << 8) | lo;
+        cpu.A = cpu_read8(cpu, addr);
+        printDebug("LD A, (u16)", "");
+        break;
+      }
+      case 0xFB: {
+        cpu.EI_pending = true;
+        printDebug("EI", "");
+      }
+      case 0xFE: {
+        uint8_t value = cpu_read8(cpu, cpu.PC++);
+        uint16_t result = cpu.A - value;
+        if ((result & 0xFF) == 0)
+          cpu.Flag |= FLAG_Z;
+        else
+          cpu.Flag &= ~FLAG_Z;
+        cpu.Flag |= FLAG_N;
+
+        if ((cpu.A & 0x0F) < (value & 0x0F))
+          cpu.Flag |= FLAG_H;
+        else
+          cpu.Flag &= ~FLAG_H;
+
+        if (cpu.A < value)
+          cpu.Flag |= FLAG_C;
+        else
+          cpu.Flag &= ~FLAG_C;
+        printDebug("CP A, u8", "");
+        break;
+      }
+      case 0xFF: {
+        uint16_t return_addr = cpu.PC++;
+        cpu_write8(cpu, --cpu.SP, (return_addr >> 8) & 0xFF);
+        cpu_write8(cpu, --cpu.SP, return_addr & 0xFF);
+        cpu.PC = 0x0038;
+        jumped = true;
+        printDebug("RST 38h", "");
+        break;
+      }
       default:
         printError("OpCode not found!", "");
         break;
     }
-    cpu.PC++;
-    opcode = rom[cpu.PC];
+    if (!(jumped))
+      cpu.PC++;
+    if (cpu.EI_pending) {
+      prePC = cpu.PC;
+      if (prePC != cpu.PC) {
+        cpu.IME = true;
+        cpu.EI_pending = false;
+      }
+    }
+    jumped = false;
+    opcode = cpu.rom[cpu.PC];
+    count++;
   }
 
   if (debug) {
-    Debugging(rom, cpu, size);
+    Debugging(cpu, size);
   }
 }

@@ -1,4 +1,5 @@
 #include <rom.h>
+#include <cpu.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,18 +11,15 @@
  *
  * @param *file Die Datei als FILE.
  * @param size Die Größe der .gb Datei.
- * @return Eine unsigned char* Variable mit dem Inhalt der .gb Datei.
+ * @param cpu Die CPU und ihre Register, Program Counter, Stack Pointer und Flaggen.
  */
-unsigned char* ReadFile(FILE *file, long size)
+void ReadFile(FILE *file, long size, CPU cpu)
 {
-  unsigned char *rom = (unsigned char*) malloc(size);
-  if (rom == NULL) {
+  if (cpu.rom == NULL) {
     printf("ERROR\n");
     exit(1);
   }
 
-  fread(rom, 1, size, file);
+  fread(cpu.rom, 1, size, file);
   fclose(file);
-
-  return rom;
 }

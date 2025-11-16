@@ -34,9 +34,6 @@ int main(int argc, char *argv[])
   fseek(file, 0, SEEK_END);
   long size = ftell(file);
   fseek(file, 0, SEEK_SET);
-  unsigned char* rom = ReadFile(file, size);
-
-  StartInstance();
 
   CPU cpu;
   cpu.A = 0;
@@ -49,10 +46,15 @@ int main(int argc, char *argv[])
   cpu.BC = 0;
   cpu.DE = 0;
   cpu.HL = 0;
-  cpu.PC = 0;
+  cpu.PC = 0x0100;
   cpu.SP = 0;
+  cpu.rom = (unsigned char*) malloc(size);
 
-  Run(rom, cpu, debug, size);
+  ReadFile(file, size, cpu);
+
+  StartInstance();
+
+  Run(cpu, debug, size);
   CloseAudioDevice();
   CloseWindow();
 
